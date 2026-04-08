@@ -120,7 +120,7 @@ const totalBudgetFields: Array<keyof BudgetTemplate> = [
 ];
 
 export default function TeamForm() {
-  const { team, branch } = useParams<{ team: string; branch: string }>();
+  const { teamPath, branch } = useParams<{ teamPath: string; branch: string }>();
 
   const branchTitles: Record<string, string> = {
     branch1: "NPI",
@@ -136,6 +136,7 @@ export default function TeamForm() {
   const accentColor = branch
     ? branchAccents[branch] ?? "from-blue-500 to-cyan-500"
     : "from-blue-500 to-cyan-500";
+  const team = teamPath?.replace(/^team-/, "") ?? "";
   const teamName = team ? team.charAt(0).toUpperCase() + team.slice(1) : "";
   const teamIcons: Record<string, string> = {
     a: "🟦",

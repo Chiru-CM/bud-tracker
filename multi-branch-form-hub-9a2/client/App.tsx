@@ -26,7 +26,7 @@ const App = () => (
           <Route path="/branch1" element={<Branch1 />} />
           <Route path="/branch2" element={<Branch2 />} />
           <Route path="/branch3" element={<Branch3 />} />
-          <Route path="/:branch/team-:team" element={<TeamForm />} />
+          <Route path="/:branch/:teamPath" element={<TeamForm />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
