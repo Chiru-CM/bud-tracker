@@ -6,6 +6,7 @@ export default function Branch3() {
     {
       id: 1,
       name: "Team A",
+      slug: "a",
       icon: "🟦",
       color: "from-blue-500 to-blue-600",
       bgColor: "bg-blue-100 dark:bg-blue-950",
@@ -13,6 +14,7 @@ export default function Branch3() {
     {
       id: 2,
       name: "Team B",
+      slug: "b",
       icon: "🟩",
       color: "from-green-500 to-green-600",
       bgColor: "bg-green-100 dark:bg-green-950",
@@ -20,6 +22,7 @@ export default function Branch3() {
     {
       id: 3,
       name: "Team C",
+      slug: "c",
       icon: "🟥",
       color: "from-red-500 to-red-600",
       bgColor: "bg-red-100 dark:bg-red-950",
@@ -75,7 +78,7 @@ export default function Branch3() {
           {teams.map((team) => (
             <Link
               key={team.id}
-              to={`/branch3/team-${team.name.toLowerCase()}`}
+              to={`/branch3/team-${team.slug}`}
               className="group"
             >
               <div className="h-full relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 p-8">

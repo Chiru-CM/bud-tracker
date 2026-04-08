@@ -2,20 +2,21 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
-interface TeamFormProps {
-  branchTitle: string;
-  branchIcon: string;
-  accentColor: string;
-}
+export default function TeamForm() {
+  const { team, branch } = useParams<{ team: string; branch: string }>();
 
-export default function TeamForm({
-  branchTitle,
-  branchIcon,
-  accentColor,
-}: TeamFormProps) {
-  const { team } = useParams<{ team: string }>();
-  const { branch } = useParams<{ branch: string }>();
-
+  const branchTitles: Record<string, string> = {
+    branch1: "NPI",
+    branch2: "CPE",
+    branch3: "CSS",
+  };
+  const branchAccents: Record<string, string> = {
+    branch1: "from-blue-500 to-cyan-500",
+    branch2: "from-purple-500 to-pink-500",
+    branch3: "from-emerald-500 to-teal-500",
+  };
+  const branchTitle = branch ? branchTitles[branch] ?? branch : "";
+  const accentColor = branch ? branchAccents[branch] ?? "from-blue-500 to-cyan-500" : "from-blue-500 to-cyan-500";
   const teamName = team ? team.charAt(0).toUpperCase() + team.slice(1) : "";
   const teamIcons: { [key: string]: string } = {
     a: "🟦",
