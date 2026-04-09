@@ -38,19 +38,6 @@ export default function Index() {
       <div className="border-b border-slate-200 dark:border-slate-800 backdrop-blur-sm bg-white/50 dark:bg-slate-950/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">F</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                  Fusion
-                </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Multi-Step Form
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
