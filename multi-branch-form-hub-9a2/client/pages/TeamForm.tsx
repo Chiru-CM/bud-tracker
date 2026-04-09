@@ -383,7 +383,6 @@ export default function TeamForm() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="text-6xl mb-4">{categoryIcon}</div>
           <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
             {teamName} - Budget Allocation
           </h2>
