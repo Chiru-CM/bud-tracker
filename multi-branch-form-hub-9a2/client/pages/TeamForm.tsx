@@ -429,23 +429,23 @@ export default function TeamForm() {
                   </button>
 
                   <div className="flex items-center gap-2 self-start sm:self-auto">
-                    <button
-                      type="button"
-                      onClick={() => saveTemplate(template.id)}
-                      className={`inline-flex items-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-3 py-2 text-sm font-semibold text-white transition-all hover:shadow-lg`}
-                    >
-                      <Save className="h-4 w-4" />
-                      {template.isSaved ? "Save changes" : "Save"}
-                    </button>
                     {template.isSaved ? (
-                      <button
-                        type="button"
-                        onClick={() => toggleTemplate(template.id)}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                        Edit
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTemplates((previousTemplates) =>
+                              previousTemplates.map((t) =>
+                                t.id === template.id ? { ...t, isSaved: false } : t,
+                              ),
+                            );
+                          }}
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                          Edit
+                        </button>
+                      </>
                     ) : null}
                     {templates.length > 1 ? (
                       <button
@@ -490,7 +490,12 @@ export default function TeamForm() {
                                   onChange={(event) => handleInputChange(template.id, event)}
                                   step={field.step}
                                   placeholder={field.placeholder}
-                                  className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  readOnly={template.isSaved}
+                                  className={`w-full rounded-lg border px-4 py-3 transition-all ${
+                                    template.isSaved
+                                      ? "border-slate-300 bg-slate-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-300"
+                                      : "border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  }`}
                                 />
                               </div>
                             ))}
@@ -520,6 +525,26 @@ export default function TeamForm() {
                         </div>
                       ))}
                     </div>
+
+                    {!template.isSaved ? (
+                      <div className="border-t border-slate-200 bg-white px-6 py-4 flex items-center justify-end gap-3 dark:border-slate-800 dark:bg-slate-900">
+                        <button
+                          type="button"
+                          onClick={() => toggleTemplate(template.id)}
+                          className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-6 py-2 font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => saveTemplate(template.id)}
+                          className={`inline-flex items-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-6 py-2 font-semibold text-white transition-all hover:shadow-lg`}
+                        >
+                          <Save className="h-4 w-4" />
+                          Save
+                        </button>
+                      </div>
+                    ) : null}
                   </>
                 ) : (
                   <div className="space-y-4 bg-slate-50 px-6 py-5 dark:bg-slate-800">
@@ -575,26 +600,6 @@ export default function TeamForm() {
               </section>
             );
           })}
-        </div>
-
-        {/* Bottom Action Buttons */}
-        <div className="mt-12 flex items-center justify-between gap-4 sm:justify-end">
-          <Link
-            to={backPath}
-            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-6 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            Cancel
-          </Link>
-          <button
-            type="button"
-            onClick={() => {
-              templates.forEach((template) => saveTemplate(template.id));
-            }}
-            className={`inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-6 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl`}
-          >
-            <Save className="h-4 w-4" />
-            Save
-          </button>
         </div>
       </div>
     </div>
