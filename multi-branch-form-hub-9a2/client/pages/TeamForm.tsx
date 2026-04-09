@@ -575,7 +575,26 @@ export default function TeamForm() {
               </section>
             );
           })}
+        </div>
 
+        {/* Bottom Action Buttons */}
+        <div className="mt-12 flex items-center justify-between gap-4 sm:justify-end">
+          <Link
+            to={backPath}
+            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-6 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            Cancel
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              templates.forEach((template) => saveTemplate(template.id));
+            }}
+            className={`inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-6 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl`}
+          >
+            <Save className="h-4 w-4" />
+            Save
+          </button>
         </div>
       </div>
     </div>
