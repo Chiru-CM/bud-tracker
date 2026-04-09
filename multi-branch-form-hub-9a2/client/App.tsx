@@ -11,6 +11,7 @@ import Branch1 from "./pages/Branch1";
 import Branch2 from "./pages/Branch2";
 import Branch3 from "./pages/Branch3";
 import TeamForm from "./pages/TeamForm";
+import CategoryTeams from "./pages/CategoryTeams";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,7 +27,8 @@ const App = () => (
           <Route path="/branch1" element={<Branch1 />} />
           <Route path="/branch2" element={<Branch2 />} />
           <Route path="/branch3" element={<Branch3 />} />
-          <Route path="/:branch/:teamPath" element={<TeamForm />} />
+          <Route path="/:branch/:category" element={<CategoryTeams />} />
+          <Route path="/:branch/:category/:teamPath" element={<TeamForm />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
