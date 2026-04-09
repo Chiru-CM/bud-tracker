@@ -307,15 +307,23 @@ export default function TeamForm() {
   ) => {
     const { name, value } = e.target;
     setTemplates((previousTemplates) =>
-      previousTemplates.map((template) =>
-        template.id === templateId
-          ? {
-              ...template,
-              data: { ...template.data, [name as keyof BudgetTemplate]: value },
-              isSaved: false,
-            }
-          : template,
-      ),
+      previousTemplates.map((template) => {
+        if (template.id !== templateId) return template;
+
+        const updatedData = { ...template.data, [name as keyof BudgetTemplate]: value };
+
+        // Auto-calculate duration in days when start or end date changes
+        if ((name === "startDate" || name === "endDate") && updatedData.startDate && updatedData.endDate) {
+          const calculatedDays = getBusinessDaysInclusive(updatedData.startDate, updatedData.endDate);
+          updatedData.durationDays = calculatedDays > 0 ? String(calculatedDays) : "";
+        }
+
+        return {
+          ...template,
+          data: updatedData,
+          isSaved: false,
+        };
+      }),
     );
   };
 
