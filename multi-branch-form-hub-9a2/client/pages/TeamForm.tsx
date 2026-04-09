@@ -23,6 +23,7 @@ type BudgetTemplate = {
   tcCount: string;
   startDate: string;
   endDate: string;
+  durationDays: string;
   progress: string;
   manualTcFactor: string;
   automationTcFactor: string;
@@ -72,6 +73,7 @@ const createBudgetTemplate = (): BudgetTemplate => ({
   tcCount: "",
   startDate: "",
   endDate: "",
+  durationDays: "",
   progress: "yet-to-start",
   manualTcFactor: "0.8",
   automationTcFactor: "0.2",
@@ -123,6 +125,7 @@ const inputRows: Array<Array<{
   [
     { label: "Start Date", name: "startDate", type: "date" },
     { label: "End Date", name: "endDate", type: "date" },
+    { label: "Duration in days", name: "durationDays", type: "number", step: "0.01" },
   ],
   [
     { label: "Manual TC factor", name: "manualTcFactor", type: "number", step: "0.01" },
@@ -222,7 +225,8 @@ const calculateTemplateValues = (template: BudgetTemplate): ComputedTemplateValu
   const asqpmFactor = parseNumber(template.asqpmFactor);
   const labTechFactor = parseNumber(template.labTechFactor);
   const projectManagerFactor = parseNumber(template.projectManagerFactor);
-  const durationDays = getBusinessDaysInclusive(template.startDate, template.endDate);
+  const manualDurationDays = parseNumber(template.durationDays);
+  const durationDays = manualDurationDays > 0 ? manualDurationDays : getBusinessDaysInclusive(template.startDate, template.endDate);
   const manualTcCount = tcCount * manualTcFactor;
   const automationTcCount = tcCount * automationTcFactor;
   const adhocRequest = tcCount * adhocRequestFactor;
