@@ -9,6 +9,13 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  branchConfigs,
+  categoryCards,
+  formatTeamNameFromSlug,
+  type BranchKey,
+  type CategoryKey,
+} from "@/lib/team-config";
 
 type BudgetTemplate = {
   validationRunName: string;
@@ -257,29 +264,25 @@ const calculateTemplateValues = (template: BudgetTemplate): ComputedTemplateValu
 };
 
 export default function TeamForm() {
-  const { teamPath, branch } = useParams<{ teamPath: string; branch: string }>();
+  const { teamPath, branch, category } = useParams<{
+    teamPath: string;
+    branch: string;
+    category: string;
+  }>();
 
-  const branchTitles: Record<string, string> = {
-    branch1: "NPI",
-    branch2: "CPE",
-    branch3: "CSS",
-  };
-  const branchAccents: Record<string, string> = {
-    branch1: "from-blue-500 to-cyan-500",
-    branch2: "from-purple-500 to-pink-500",
-    branch3: "from-emerald-500 to-teal-500",
-  };
-  const branchTitle = branch ? branchTitles[branch] ?? branch : "";
-  const accentColor = branch
-    ? branchAccents[branch] ?? "from-blue-500 to-cyan-500"
+  const branchKey = branch && branch in branchConfigs ? (branch as BranchKey) : null;
+  const categoryKey =
+    category && category in categoryCards ? (category as CategoryKey) : null;
+  const branchTitle = branchKey ? branchConfigs[branchKey].title : "";
+  const accentColor = branchKey
+    ? branchConfigs[branchKey].accentColor
     : "from-blue-500 to-cyan-500";
+  const categoryLabel = categoryKey ? categoryCards[categoryKey].label : "";
+  const categoryIcon = categoryKey ? categoryCards[categoryKey].icon : "👥";
   const team = teamPath?.replace(/^team-/, "") ?? "";
-  const teamName = team ? team.charAt(0).toUpperCase() + team.slice(1) : "";
-  const teamIcons: Record<string, string> = {
-    a: "🟦",
-    b: "🟩",
-    c: "🟥",
-  };
+  const teamName = formatTeamNameFromSlug(team);
+  const backPath =
+    branch && category ? `/${branch}/${category}` : branch ? `/${branch}` : "/";
 
   const [templates, setTemplates] = useState<TemplateEntry[]>([
     createTemplateEntry(),
@@ -353,12 +356,12 @@ export default function TeamForm() {
                   {branchTitle}
                 </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Team {teamName}
+                  {categoryLabel ? `${categoryLabel} • ${teamName}` : teamName}
                 </p>
               </div>
             </div>
             <Link
-              to={`/${branch}`}
+              to={backPath}
               className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -372,12 +375,12 @@ export default function TeamForm() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="text-6xl mb-4">{teamIcons[team || "a"]}</div>
+            <div className="text-6xl mb-4">{categoryIcon}</div>
             <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-              Team {teamName} - Budget Templates
+              {teamName} - Budget Templates
             </h2>
             <p className="text-slate-600 dark:text-slate-400">
-              Add one or more budget templates for this team.
+              Add one or more budget templates for this {categoryLabel.toLowerCase() || "selected"} team.
             </p>
           </div>
           <button
