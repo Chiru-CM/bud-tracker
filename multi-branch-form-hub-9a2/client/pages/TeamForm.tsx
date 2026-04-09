@@ -403,12 +403,34 @@ export default function TeamForm() {
             const title = template.data.validationRunName || `Budget Allocation ${templateIndex + 1}`;
             const totalBudget = formatCurrency(computed.totalBudget);
 
+            const progressColorClass = {
+              "yet-to-start": "border-slate-200 dark:border-slate-800",
+              "in-progress": "border-blue-500 dark:border-blue-600",
+              "completed": "border-green-500 dark:border-green-600",
+              "on-hold": "border-yellow-500 dark:border-yellow-600",
+            }[template.data.progress] || "border-slate-200 dark:border-slate-800";
+
+            const progressHeaderBgClass = {
+              "yet-to-start": "bg-white dark:bg-slate-900",
+              "in-progress": "bg-blue-50 dark:bg-blue-950",
+              "completed": "bg-green-50 dark:bg-green-950",
+              "on-hold": "bg-yellow-50 dark:bg-yellow-950",
+            }[template.data.progress] || "bg-white dark:bg-slate-900";
+
             return (
               <section
                 key={template.id}
-                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900"
+                className={`overflow-hidden rounded-2xl border-2 bg-white shadow-xl dark:bg-slate-900 transition-all ${progressColorClass}`}
               >
-                <div className="flex flex-col gap-4 border-b border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+                <div className={`flex flex-col gap-4 border-b px-6 py-4 sm:flex-row sm:items-center sm:justify-between ${progressHeaderBgClass} ${
+                  template.data.progress === "in-progress"
+                    ? "border-blue-200 dark:border-blue-800"
+                    : template.data.progress === "completed"
+                      ? "border-green-200 dark:border-green-800"
+                      : template.data.progress === "on-hold"
+                        ? "border-yellow-200 dark:border-yellow-800"
+                        : "border-slate-200 dark:border-slate-800"
+                }`}>
                   <button
                     type="button"
                     onClick={() => toggleTemplate(template.id)}
@@ -547,7 +569,15 @@ export default function TeamForm() {
                     ) : null}
                   </>
                 ) : (
-                  <div className="space-y-4 bg-slate-50 px-6 py-5 dark:bg-slate-800">
+                  <div className={`space-y-4 px-6 py-5 ${
+                    template.data.progress === "in-progress"
+                      ? "bg-blue-50 dark:bg-blue-950"
+                      : template.data.progress === "completed"
+                        ? "bg-green-50 dark:bg-green-950"
+                        : template.data.progress === "on-hold"
+                          ? "bg-yellow-50 dark:bg-yellow-950"
+                          : "bg-slate-50 dark:bg-slate-800"
+                  }`}>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
