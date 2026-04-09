@@ -514,7 +514,7 @@ export default function TeamForm() {
                   </>
                 ) : (
                   <div className="space-y-4 bg-slate-50 px-6 py-5 dark:bg-slate-800">
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Validation run name
@@ -525,10 +525,18 @@ export default function TeamForm() {
                       </div>
                       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Budget
+                          Start date
                         </p>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                          {formatCurrency(parseNumber(template.data.budget))}
+                          {template.data.startDate || "—"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          End date
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+                          {template.data.endDate || "—"}
                         </p>
                       </div>
                       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
@@ -540,9 +548,6 @@ export default function TeamForm() {
                         </p>
                       </div>
                     </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      This template is saved. Click Edit to open it again.
-                    </p>
                   </div>
                 )}
               </section>
