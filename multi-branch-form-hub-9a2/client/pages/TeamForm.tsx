@@ -85,35 +85,49 @@ const createTemplateEntry = (): TemplateEntry => ({
   isSaved: false,
 });
 
-const inputRows: Array<{
+const inputRows: Array<Array<{
   label: string;
   name: keyof BudgetTemplate;
   type: string;
   step?: string;
   placeholder?: string;
-}> = [
-  {
-    label: "Validation run name",
-    name: "validationRunName",
-    type: "text",
-    placeholder: "Enter validation run name",
-  },
-  { label: "Budget", name: "budget", type: "number", step: "0.01", placeholder: "$0.00" },
-  { label: "TC Count", name: "tcCount", type: "number", step: "0.01" },
-  { label: "Start Date", name: "startDate", type: "date" },
-  { label: "End Date", name: "endDate", type: "date" },
-  { label: "Manual TC factor", name: "manualTcFactor", type: "number", step: "0.01" },
-  { label: "Automation TC factor", name: "automationTcFactor", type: "number", step: "0.01" },
-  { label: "Adhoc request factor", name: "adhocRequestFactor", type: "number", step: "0.01" },
-  { label: "Duration weeks factor", name: "durationWeekFactor", type: "number", step: "0.01" },
-  { label: "Manual HC divisor", name: "manualHcDivisor", type: "number", step: "0.01" },
-  { label: "Automation HC divisor", name: "automationHcDivisor", type: "number", step: "0.01" },
-  { label: "SQPM factor of Boise", name: "sqpmFactor", type: "number", step: "0.01" },
-  { label: "PL factor", name: "plFactor", type: "number", step: "0.01" },
-  { label: "Per WQE factor", name: "perWqeFactor", type: "number", step: "0.01" },
-  { label: "aSQPM factor", name: "asqpmFactor", type: "number", step: "0.01" },
-  { label: "Lab technician and manager factor", name: "labTechFactor", type: "number", step: "0.01" },
-  { label: "Project manager factor", name: "projectManagerFactor", type: "number", step: "0.01" },
+}>> = [
+  [
+    {
+      label: "Validation run name",
+      name: "validationRunName",
+      type: "text",
+      placeholder: "Enter validation run name",
+    },
+  ],
+  [
+    { label: "Rate card", name: "budget", type: "number", step: "0.01", placeholder: "$0.00" },
+    { label: "TC Count", name: "tcCount", type: "number", step: "0.01" },
+  ],
+  [
+    { label: "Start Date", name: "startDate", type: "date" },
+    { label: "End Date", name: "endDate", type: "date" },
+  ],
+  [
+    { label: "Manual TC factor", name: "manualTcFactor", type: "number", step: "0.01" },
+    { label: "Automation TC factor", name: "automationTcFactor", type: "number", step: "0.01" },
+    { label: "Adhoc request factor", name: "adhocRequestFactor", type: "number", step: "0.01" },
+  ],
+  [
+    { label: "Duration weeks factor", name: "durationWeekFactor", type: "number", step: "0.01" },
+    { label: "Manual HC divisor", name: "manualHcDivisor", type: "number", step: "0.01" },
+    { label: "Automation HC divisor", name: "automationHcDivisor", type: "number", step: "0.01" },
+  ],
+  [
+    { label: "SQPM factor of Boise", name: "sqpmFactor", type: "number", step: "0.01" },
+    { label: "PL factor", name: "plFactor", type: "number", step: "0.01" },
+    { label: "Per WQE factor", name: "perWqeFactor", type: "number", step: "0.01" },
+  ],
+  [
+    { label: "aSQPM factor", name: "asqpmFactor", type: "number", step: "0.01" },
+    { label: "Lab technician and manager factor", name: "labTechFactor", type: "number", step: "0.01" },
+    { label: "Project manager factor", name: "projectManagerFactor", type: "number", step: "0.01" },
+  ],
 ];
 
 const computedRows: Array<{ label: string; name: keyof ComputedTemplateValues; kind: "count" | "currency" }> = [
@@ -453,21 +467,34 @@ export default function TeamForm() {
                       <h4 className="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Inputs and factors
                       </h4>
-                      <div className="grid gap-4 md:grid-cols-2">
-                        {inputRows.map((field) => (
-                          <div key={field.name} className="space-y-2">
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                              {field.label}
-                            </label>
-                            <input
-                              type={field.type}
-                              name={field.name}
-                              value={template.data[field.name]}
-                              onChange={(event) => handleInputChange(template.id, event)}
-                              step={field.step}
-                              placeholder={field.placeholder}
-                              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                            />
+                      <div className="space-y-4">
+                        {inputRows.map((row, rowIndex) => (
+                          <div
+                            key={rowIndex}
+                            className={`grid gap-4 ${
+                              row.length === 1
+                                ? "md:grid-cols-1"
+                                : row.length === 2
+                                  ? "md:grid-cols-2"
+                                  : "md:grid-cols-3"
+                            }`}
+                          >
+                            {row.map((field) => (
+                              <div key={field.name} className="space-y-2">
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                  {field.label}
+                                </label>
+                                <input
+                                  type={field.type}
+                                  name={field.name}
+                                  value={template.data[field.name]}
+                                  onChange={(event) => handleInputChange(template.id, event)}
+                                  step={field.step}
+                                  placeholder={field.placeholder}
+                                  className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                />
+                              </div>
+                            ))}
                           </div>
                         ))}
                       </div>
