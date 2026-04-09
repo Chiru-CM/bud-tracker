@@ -61,7 +61,7 @@ export default function Branch1() {
                 />
 
                 <div className="relative">
-                  <div className={`${category.bgColor} mb-6 flex h-20 w-20 items-center justify-center rounded-2xl text-5xl transition-all duration-300 group-hover:scale-110`}>
+                  <div className={`${category.bgColor} mb-6 flex h-20 w-20 items-center justify-center rounded-2xl text-5xl font-bold transition-all duration-300 group-hover:scale-110`}>
                     {category.icon}
                   </div>
 

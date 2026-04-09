@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { ArrowLeft, Plus, Users } from "lucide-react";
+import { ArrowLeft, Plus, Users, Edit2, Trash2, Check, X } from "lucide-react";
 import {
   branchConfigs,
   categoryCards,
@@ -29,6 +29,8 @@ export default function CategoryTeams() {
     readStoredTeams(branchKey, categoryKey),
   );
   const [teamName, setTeamName] = useState("");
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [editingTeamName, setEditingTeamName] = useState("");
 
   useEffect(() => {
     if (!isValidBranch || !isValidCategory) {
@@ -58,6 +60,38 @@ export default function CategoryTeams() {
       createTeamCard(teamName, previousTeams),
     ]);
     setTeamName("");
+  };
+
+  const handleEditTeam = (team: TeamCard) => {
+    setEditingTeamId(team.id);
+    setEditingTeamName(team.name);
+  };
+
+  const handleSaveEdit = (teamId: string) => {
+    if (!editingTeamName.trim()) {
+      setEditingTeamId(null);
+      return;
+    }
+
+    setTeams((previousTeams) =>
+      previousTeams.map((team) =>
+        team.id === teamId
+          ? { ...team, name: editingTeamName.trim() }
+          : team
+      )
+    );
+    setEditingTeamId(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTeamId(null);
+    setEditingTeamName("");
+  };
+
+  const handleDeleteTeam = (teamId: string) => {
+    setTeams((previousTeams) =>
+      previousTeams.filter((team) => team.id !== teamId)
+    );
   };
 
   if (!isValidBranch || !isValidCategory) {
@@ -135,32 +169,82 @@ export default function CategoryTeams() {
 
         <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
           {teams.map((team) => (
-            <Link
+            <div
               key={team.id}
-              to={`/${branchKey}/${categoryKey}/team-${team.slug}`}
-              className="group"
+              className="relative h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl dark:border-slate-800 dark:bg-slate-900"
             >
-              <div className="relative h-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${team.color} opacity-0 transition-opacity duration-300 group-hover:opacity-5`}
-                />
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${team.color} opacity-0 transition-opacity duration-300 hover:opacity-5`}
+              />
 
-                <div className="relative">
-                  <div className={`${team.bgColor} mb-6 flex h-20 w-20 items-center justify-center rounded-2xl text-5xl transition-all duration-300 group-hover:scale-110`}>
+              <div className="relative flex h-full flex-col p-8">
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`${team.bgColor} flex h-20 w-20 items-center justify-center rounded-2xl text-5xl`}>
                     {team.icon}
                   </div>
-
-                  <h3 className="mb-4 text-2xl font-bold text-slate-900 dark:text-white">
-                    {team.name}
-                  </h3>
-
-                  <div className="flex items-center gap-2 font-semibold text-slate-600 transition-all group-hover:gap-3 dark:text-slate-400">
-                    <Users className="h-5 w-5" />
-                    <span>Add Budget</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditTeam(team)}
+                      className="rounded-lg p-2 text-slate-600 transition-all hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                      title="Edit team name"
+                    >
+                      <Edit2 className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTeam(team.id)}
+                      className="rounded-lg p-2 text-slate-600 transition-all hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950 dark:hover:text-red-400"
+                      title="Delete team"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
+
+                <div className="flex-grow">
+                  {editingTeamId === team.id ? (
+                    <div className="mb-4 flex gap-2">
+                      <input
+                        type="text"
+                        value={editingTeamName}
+                        onChange={(e) => setEditingTeamName(e.target.value)}
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveEdit(team.id);
+                          if (e.key === "Escape") handleCancelEdit();
+                        }}
+                        className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                      />
+                      <button
+                        onClick={() => handleSaveEdit(team.id)}
+                        className="rounded-lg bg-green-500 p-2 text-white transition-all hover:bg-green-600"
+                        title="Save"
+                      >
+                        <Check className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="rounded-lg bg-slate-300 p-2 text-slate-700 transition-all hover:bg-slate-400 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                        title="Cancel"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <h3 className="mb-4 text-2xl font-bold text-slate-900 dark:text-white">
+                      {team.name}
+                    </h3>
+                  )}
+                </div>
+
+                <Link
+                  to={`/${branchKey}/${categoryKey}/team-${team.slug}`}
+                  className="flex items-center gap-2 font-semibold text-slate-600 transition-all hover:gap-3 dark:text-slate-400"
+                >
+                  <Users className="h-5 w-5" />
+                  <span>Add Budget</span>
+                </Link>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </div>

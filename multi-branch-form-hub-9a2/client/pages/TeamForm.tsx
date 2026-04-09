@@ -23,6 +23,7 @@ type BudgetTemplate = {
   tcCount: string;
   startDate: string;
   endDate: string;
+  progress: string;
   manualTcFactor: string;
   automationTcFactor: string;
   adhocRequestFactor: string;
@@ -71,6 +72,7 @@ const createBudgetTemplate = (): BudgetTemplate => ({
   tcCount: "",
   startDate: "",
   endDate: "",
+  progress: "yet-to-start",
   manualTcFactor: "0.8",
   automationTcFactor: "0.2",
   adhocRequestFactor: "0.2",
@@ -91,6 +93,13 @@ const createTemplateEntry = (): TemplateEntry => ({
   isExpanded: true,
   isSaved: false,
 });
+
+const progressOptions = [
+  { value: "yet-to-start", label: "Yet to Start" },
+  { value: "in-progress", label: "In Progress" },
+  { value: "completed", label: "Completed" },
+  { value: "on-hold", label: "On Hold" },
+];
 
 const inputRows: Array<Array<{
   label: string;
@@ -374,29 +383,24 @@ export default function TeamForm() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="text-6xl mb-4">{categoryIcon}</div>
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-              {teamName} - Budget Templates
-            </h2>
-            <p className="text-slate-600 dark:text-slate-400">
-              Add one or more budget templates for this {categoryLabel.toLowerCase() || "selected"} team.
-            </p>
-          </div>
+          <div className="text-6xl mb-4">{categoryIcon}</div>
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+            {teamName} - Budget Allocation
+          </h2>
           <button
             type="button"
             onClick={addTemplate}
             className={`inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-5 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl`}
           >
             <Plus className="h-4 w-4" />
-            Add budget template
+            Add budget
           </button>
         </div>
 
         <div className="space-y-8">
           {templates.map((template, templateIndex) => {
             const computed = calculateTemplateValues(template.data);
-            const title = template.data.validationRunName || `Template ${templateIndex + 1}`;
+            const title = template.data.validationRunName || `Budget Allocation ${templateIndex + 1}`;
             const totalBudget = formatCurrency(computed.totalBudget);
 
             return (
@@ -411,17 +415,9 @@ export default function TeamForm() {
                     className="flex flex-1 items-center justify-between gap-4 text-left"
                   >
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Budget template {templateIndex + 1}
-                      </p>
                       <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                         {title}
                       </h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        {template.isSaved
-                          ? `Saved • Total budget ${totalBudget}`
-                          : "Draft • Save to collapse"}
-                      </p>
                     </div>
                     <span className="rounded-full bg-slate-100 p-2 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                       {template.isExpanded ? (
@@ -527,7 +523,7 @@ export default function TeamForm() {
                   </>
                 ) : (
                   <div className="space-y-4 bg-slate-50 px-6 py-5 dark:bg-slate-800">
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Validation run name
@@ -538,11 +534,32 @@ export default function TeamForm() {
                       </div>
                       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Budget
+                          Date range
                         </p>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                          {formatCurrency(parseNumber(template.data.budget))}
+                          {template.data.startDate && template.data.endDate
+                            ? `${template.data.startDate} to ${template.data.endDate}`
+                            : "—"}
                         </p>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Progress
+                        </p>
+                        <select
+                          value={template.data.progress}
+                          onChange={(event) => {
+                            const e = { target: { name: "progress", value: event.target.value } } as any;
+                            handleInputChange(template.id, e);
+                          }}
+                          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        >
+                          {progressOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -553,30 +570,12 @@ export default function TeamForm() {
                         </p>
                       </div>
                     </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      This template is saved. Click Edit to open it again.
-                    </p>
                   </div>
                 )}
               </section>
             );
           })}
 
-          <div className="flex flex-col gap-4 pt-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={addTemplate}
-              className="flex-1 rounded-lg bg-gradient-to-r from-slate-900 to-slate-700 py-3 font-semibold text-white transition-all duration-300 hover:shadow-lg dark:from-slate-700 dark:to-slate-500"
-            >
-              Add another template
-            </button>
-            <Link
-              to={`/${branch}`}
-              className="rounded-lg border border-slate-300 px-6 py-3 text-center font-semibold text-slate-900 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800"
-            >
-              Cancel
-            </Link>
-          </div>
         </div>
       </div>
     </div>

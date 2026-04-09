@@ -83,14 +83,14 @@ export const categoryCards: Record<CategoryKey, CategoryCard> = {
   ink: {
     label: "Ink",
     description: "Open the ink teams list and add new teams",
-    icon: "🖋️",
+    icon: "I",
     color: "from-blue-500 to-blue-600",
     bgColor: "bg-blue-100 dark:bg-blue-950",
   },
   laser: {
     label: "Laser",
     description: "Open the laser teams list and add new teams",
-    icon: "⚡",
+    icon: "L",
     color: "from-amber-500 to-orange-600",
     bgColor: "bg-amber-100 dark:bg-amber-950",
   },
