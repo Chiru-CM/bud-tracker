@@ -23,6 +23,7 @@ type BudgetTemplate = {
   tcCount: string;
   startDate: string;
   endDate: string;
+  progress: string;
   manualTcFactor: string;
   automationTcFactor: string;
   adhocRequestFactor: string;
@@ -71,6 +72,7 @@ const createBudgetTemplate = (): BudgetTemplate => ({
   tcCount: "",
   startDate: "",
   endDate: "",
+  progress: "yet-to-start",
   manualTcFactor: "0.8",
   automationTcFactor: "0.2",
   adhocRequestFactor: "0.2",
@@ -91,6 +93,13 @@ const createTemplateEntry = (): TemplateEntry => ({
   isExpanded: true,
   isSaved: false,
 });
+
+const progressOptions = [
+  { value: "yet-to-start", label: "Yet to Start" },
+  { value: "in-progress", label: "In Progress" },
+  { value: "completed", label: "Completed" },
+  { value: "on-hold", label: "On Hold" },
+];
 
 const inputRows: Array<Array<{
   label: string;
@@ -114,6 +123,7 @@ const inputRows: Array<Array<{
   [
     { label: "Start Date", name: "startDate", type: "date" },
     { label: "End Date", name: "endDate", type: "date" },
+    { label: "Progress", name: "progress", type: "select" },
   ],
   [
     { label: "Manual TC factor", name: "manualTcFactor", type: "number", step: "0.01" },
@@ -474,15 +484,31 @@ export default function TeamForm() {
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                                   {field.label}
                                 </label>
-                                <input
-                                  type={field.type}
-                                  name={field.name}
-                                  value={template.data[field.name]}
-                                  onChange={(event) => handleInputChange(template.id, event)}
-                                  step={field.step}
-                                  placeholder={field.placeholder}
-                                  className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                                />
+                                {field.type === "select" ? (
+                                  <select
+                                    name={field.name}
+                                    value={template.data[field.name]}
+                                    onChange={(event) => handleInputChange(template.id, event as any)}
+                                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  >
+                                    {field.name === "progress" &&
+                                      progressOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                          {option.label}
+                                        </option>
+                                      ))}
+                                  </select>
+                                ) : (
+                                  <input
+                                    type={field.type}
+                                    name={field.name}
+                                    value={template.data[field.name]}
+                                    onChange={(event) => handleInputChange(template.id, event)}
+                                    step={field.step}
+                                    placeholder={field.placeholder}
+                                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  />
+                                )}
                               </div>
                             ))}
                           </div>
@@ -514,7 +540,7 @@ export default function TeamForm() {
                   </>
                 ) : (
                   <div className="space-y-4 bg-slate-50 px-6 py-5 dark:bg-slate-800">
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Validation run name
@@ -537,6 +563,14 @@ export default function TeamForm() {
                         </p>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                           {template.data.endDate || "—"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Progress
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+                          {progressOptions.find((o) => o.value === template.data.progress)?.label || "—"}
                         </p>
                       </div>
                       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
