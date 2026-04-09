@@ -23,6 +23,7 @@ type BudgetTemplate = {
   tcCount: string;
   startDate: string;
   endDate: string;
+  durationDays: string;
   progress: string;
   manualTcFactor: string;
   automationTcFactor: string;
@@ -72,6 +73,7 @@ const createBudgetTemplate = (): BudgetTemplate => ({
   tcCount: "",
   startDate: "",
   endDate: "",
+  durationDays: "",
   progress: "yet-to-start",
   manualTcFactor: "0.8",
   automationTcFactor: "0.2",
@@ -123,6 +125,7 @@ const inputRows: Array<Array<{
   [
     { label: "Start Date", name: "startDate", type: "date" },
     { label: "End Date", name: "endDate", type: "date" },
+    { label: "Duration in days", name: "durationDays", type: "number", step: "0.01" },
   ],
   [
     { label: "Manual TC factor", name: "manualTcFactor", type: "number", step: "0.01" },
@@ -222,7 +225,8 @@ const calculateTemplateValues = (template: BudgetTemplate): ComputedTemplateValu
   const asqpmFactor = parseNumber(template.asqpmFactor);
   const labTechFactor = parseNumber(template.labTechFactor);
   const projectManagerFactor = parseNumber(template.projectManagerFactor);
-  const durationDays = getBusinessDaysInclusive(template.startDate, template.endDate);
+  const manualDurationDays = parseNumber(template.durationDays);
+  const durationDays = manualDurationDays > 0 ? manualDurationDays : getBusinessDaysInclusive(template.startDate, template.endDate);
   const manualTcCount = tcCount * manualTcFactor;
   const automationTcCount = tcCount * automationTcFactor;
   const adhocRequest = tcCount * adhocRequestFactor;
@@ -303,15 +307,23 @@ export default function TeamForm() {
   ) => {
     const { name, value } = e.target;
     setTemplates((previousTemplates) =>
-      previousTemplates.map((template) =>
-        template.id === templateId
-          ? {
-              ...template,
-              data: { ...template.data, [name as keyof BudgetTemplate]: value },
-              isSaved: false,
-            }
-          : template,
-      ),
+      previousTemplates.map((template) => {
+        if (template.id !== templateId) return template;
+
+        const updatedData = { ...template.data, [name as keyof BudgetTemplate]: value };
+
+        // Auto-calculate duration in days when start or end date changes
+        if ((name === "startDate" || name === "endDate") && updatedData.startDate && updatedData.endDate) {
+          const calculatedDays = getBusinessDaysInclusive(updatedData.startDate, updatedData.endDate);
+          updatedData.durationDays = calculatedDays > 0 ? String(calculatedDays) : "";
+        }
+
+        return {
+          ...template,
+          data: updatedData,
+          isSaved: false,
+        };
+      }),
     );
   };
 
@@ -383,7 +395,6 @@ export default function TeamForm() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="text-6xl mb-4">{categoryIcon}</div>
           <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
             {teamName} - Budget Allocation
           </h2>
@@ -403,12 +414,34 @@ export default function TeamForm() {
             const title = template.data.validationRunName || `Budget Allocation ${templateIndex + 1}`;
             const totalBudget = formatCurrency(computed.totalBudget);
 
+            const progressColorClass = {
+              "yet-to-start": "border-slate-200 dark:border-slate-800",
+              "in-progress": "border-blue-500 dark:border-blue-600",
+              "completed": "border-green-500 dark:border-green-600",
+              "on-hold": "border-yellow-500 dark:border-yellow-600",
+            }[template.data.progress] || "border-slate-200 dark:border-slate-800";
+
+            const progressHeaderBgClass = {
+              "yet-to-start": "bg-white dark:bg-slate-900",
+              "in-progress": "bg-blue-50 dark:bg-blue-950",
+              "completed": "bg-green-50 dark:bg-green-950",
+              "on-hold": "bg-yellow-50 dark:bg-yellow-950",
+            }[template.data.progress] || "bg-white dark:bg-slate-900";
+
             return (
               <section
                 key={template.id}
-                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900"
+                className={`overflow-hidden rounded-2xl border-2 bg-white shadow-xl dark:bg-slate-900 transition-all ${progressColorClass}`}
               >
-                <div className="flex flex-col gap-4 border-b border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+                <div className={`flex flex-col gap-4 border-b px-6 py-4 sm:flex-row sm:items-center sm:justify-between ${progressHeaderBgClass} ${
+                  template.data.progress === "in-progress"
+                    ? "border-blue-200 dark:border-blue-800"
+                    : template.data.progress === "completed"
+                      ? "border-green-200 dark:border-green-800"
+                      : template.data.progress === "on-hold"
+                        ? "border-yellow-200 dark:border-yellow-800"
+                        : "border-slate-200 dark:border-slate-800"
+                }`}>
                   <button
                     type="button"
                     onClick={() => toggleTemplate(template.id)}
@@ -429,23 +462,23 @@ export default function TeamForm() {
                   </button>
 
                   <div className="flex items-center gap-2 self-start sm:self-auto">
-                    <button
-                      type="button"
-                      onClick={() => saveTemplate(template.id)}
-                      className={`inline-flex items-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-3 py-2 text-sm font-semibold text-white transition-all hover:shadow-lg`}
-                    >
-                      <Save className="h-4 w-4" />
-                      {template.isSaved ? "Save changes" : "Save"}
-                    </button>
                     {template.isSaved ? (
-                      <button
-                        type="button"
-                        onClick={() => toggleTemplate(template.id)}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                        Edit
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTemplates((previousTemplates) =>
+                              previousTemplates.map((t) =>
+                                t.id === template.id ? { ...t, isSaved: false } : t,
+                              ),
+                            );
+                          }}
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                          Edit
+                        </button>
+                      </>
                     ) : null}
                     {templates.length > 1 ? (
                       <button
@@ -490,7 +523,12 @@ export default function TeamForm() {
                                   onChange={(event) => handleInputChange(template.id, event)}
                                   step={field.step}
                                   placeholder={field.placeholder}
-                                  className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  readOnly={template.isSaved}
+                                  className={`w-full rounded-lg border px-4 py-3 transition-all ${
+                                    template.isSaved
+                                      ? "border-slate-300 bg-slate-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-300"
+                                      : "border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  }`}
                                 />
                               </div>
                             ))}
@@ -520,9 +558,37 @@ export default function TeamForm() {
                         </div>
                       ))}
                     </div>
+
+                    {!template.isSaved ? (
+                      <div className="border-t border-slate-200 bg-white px-6 py-4 flex items-center justify-end gap-3 dark:border-slate-800 dark:bg-slate-900">
+                        <button
+                          type="button"
+                          onClick={() => toggleTemplate(template.id)}
+                          className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-6 py-2 font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => saveTemplate(template.id)}
+                          className={`inline-flex items-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-6 py-2 font-semibold text-white transition-all hover:shadow-lg`}
+                        >
+                          <Save className="h-4 w-4" />
+                          Save
+                        </button>
+                      </div>
+                    ) : null}
                   </>
                 ) : (
-                  <div className="space-y-4 bg-slate-50 px-6 py-5 dark:bg-slate-800">
+                  <div className={`space-y-4 px-6 py-5 ${
+                    template.data.progress === "in-progress"
+                      ? "bg-blue-50 dark:bg-blue-950"
+                      : template.data.progress === "completed"
+                        ? "bg-green-50 dark:bg-green-950"
+                        : template.data.progress === "on-hold"
+                          ? "bg-yellow-50 dark:bg-yellow-950"
+                          : "bg-slate-50 dark:bg-slate-800"
+                  }`}>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -575,7 +641,6 @@ export default function TeamForm() {
               </section>
             );
           })}
-
         </div>
       </div>
     </div>
