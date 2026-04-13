@@ -515,7 +515,7 @@ export default function TeamForm() {
                           onClick={() => {
                             setTemplates((previousTemplates) =>
                               previousTemplates.map((t) =>
-                                t.id === template.id ? { ...t, isSaved: false } : t,
+                                t.id === template.id ? { ...t, isSaved: false, isExpanded: true } : t,
                               ),
                             );
                           }}
@@ -718,9 +718,6 @@ export default function TeamForm() {
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
                       Saved At
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -742,37 +739,6 @@ export default function TeamForm() {
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
                         {entry.savedAt}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => editFromHistory(entry)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                          >
-                            <Edit3 className="h-3 w-3" />
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newEntry: TemplateEntry = {
-                                id: crypto.randomUUID(),
-                                data: { ...entry.data },
-                                isExpanded: true,
-                                isSaved: false,
-                              };
-                              setTemplates((previousTemplates) => [
-                                ...previousTemplates,
-                                newEntry,
-                              ]);
-                            }}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                          >
-                            <Plus className="h-3 w-3" />
-                            Duplicate
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   ))}
