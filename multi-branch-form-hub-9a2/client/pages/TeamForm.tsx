@@ -19,7 +19,6 @@ import {
 
 type BudgetTemplate = {
   validationRunName: string;
-  budget: string;
   tcCount: string;
   startDate: string;
   endDate: string;
@@ -37,6 +36,15 @@ type BudgetTemplate = {
   asqpmFactor: string;
   labTechFactor: string;
   projectManagerFactor: string;
+  manualHcRate: string;
+  automationHcRate: string;
+  leadRate: string;
+  sqpmRate: string;
+  plRate: string;
+  perWqeRate: string;
+  asqpmRate: string;
+  labTechRate: string;
+  projectManagerRate: string;
 };
 
 type TemplateEntry = {
@@ -77,7 +85,6 @@ type HistoryEntry = {
 
 const createBudgetTemplate = (): BudgetTemplate => ({
   validationRunName: "",
-  budget: "",
   tcCount: "",
   startDate: "",
   endDate: "",
@@ -95,6 +102,15 @@ const createBudgetTemplate = (): BudgetTemplate => ({
   asqpmFactor: "0.8",
   labTechFactor: "0.4",
   projectManagerFactor: "0.4",
+  manualHcRate: "",
+  automationHcRate: "",
+  leadRate: "",
+  sqpmRate: "",
+  plRate: "",
+  perWqeRate: "",
+  asqpmRate: "",
+  labTechRate: "",
+  projectManagerRate: "",
 });
 
 const createTemplateEntry = (): TemplateEntry => ({
@@ -127,7 +143,6 @@ const inputRows: Array<Array<{
     },
   ],
   [
-    { label: "Rate card", name: "budget", type: "number", step: "0.01", placeholder: "$0.00" },
     { label: "TC Count", name: "tcCount", type: "number", step: "0.01" },
   ],
   [
@@ -220,7 +235,15 @@ const getBusinessDaysInclusive = (startDate: string, endDate: string) => {
 
 const calculateTemplateValues = (template: BudgetTemplate): ComputedTemplateValues => {
   const tcCount = parseNumber(template.tcCount);
-  const budget = parseNumber(template.budget);
+  const manualHcRate = parseNumber(template.manualHcRate);
+  const automationHcRate = parseNumber(template.automationHcRate);
+  const leadRate = parseNumber(template.leadRate);
+  const sqpmRate = parseNumber(template.sqpmRate);
+  const plRate = parseNumber(template.plRate);
+  const perWqeRate = parseNumber(template.perWqeRate);
+  const asqpmRate = parseNumber(template.asqpmRate);
+  const labTechRate = parseNumber(template.labTechRate);
+  const projectManagerRate = parseNumber(template.projectManagerRate);
   const manualTcFactor = parseNumber(template.manualTcFactor);
   const automationTcFactor = parseNumber(template.automationTcFactor);
   const adhocRequestFactor = parseNumber(template.adhocRequestFactor);
@@ -242,15 +265,15 @@ const calculateTemplateValues = (template: BudgetTemplate): ComputedTemplateValu
   const durationWeeks = durationDays * durationWeekFactor;
   const manualHc = durationDays > 0 ? (manualTcCount + adhocRequest) / durationDays / manualHcDivisor : 0;
   const automationHc = durationDays > 0 ? automationTcCount / durationDays / automationHcDivisor : 0;
-  const manualHcCost = manualHc * budget * durationWeeks;
-  const automationHcCost = automationHc * budget * durationWeeks;
-  const leadCost = durationWeeks * budget;
-  const sqpmCost = durationWeeks * budget * sqpmFactor;
-  const plCost = durationWeeks * budget * plFactor;
-  const perWqeCost = durationWeeks * budget * perWqeFactor;
-  const asqpmCost = durationWeeks * budget * asqpmFactor;
-  const labTechCost = durationWeeks * budget * labTechFactor;
-  const projectManagerCost = durationWeeks * budget * projectManagerFactor;
+  const manualHcCost = manualHc * manualHcRate * durationWeeks;
+  const automationHcCost = automationHc * automationHcRate * durationWeeks;
+  const leadCost = durationWeeks * leadRate;
+  const sqpmCost = durationWeeks * sqpmRate * sqpmFactor;
+  const plCost = durationWeeks * plRate * plFactor;
+  const perWqeCost = durationWeeks * perWqeRate * perWqeFactor;
+  const asqpmCost = durationWeeks * asqpmRate * asqpmFactor;
+  const labTechCost = durationWeeks * labTechRate * labTechFactor;
+  const projectManagerCost = durationWeeks * projectManagerRate * projectManagerFactor;
   const totalBudget =
     manualHcCost +
     automationHcCost +
@@ -615,25 +638,70 @@ export default function TeamForm() {
                     </div>
 
                     <div className="divide-y divide-slate-200 dark:divide-slate-800">
-                      {computedRows.map((field) => (
-                        <div
-                          key={field.name}
-                          className="grid gap-3 px-6 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,260px)] sm:items-center"
-                        >
-                          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                            {field.label}
-                          </label>
-                          <input
-                            readOnly
-                            value={
-                              field.kind === "currency"
-                                ? formatCurrency(computed[field.name])
-                                : formatNumber(computed[field.name])
-                            }
-                            className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                          />
-                        </div>
-                      ))}
+                      {computedRows.map((field) => {
+                        const rateFieldMap: Record<string, keyof BudgetTemplate> = {
+                          manualHcCost: "manualHcRate",
+                          automationHcCost: "automationHcRate",
+                          leadCost: "leadRate",
+                          sqpmCost: "sqpmRate",
+                          plCost: "plRate",
+                          perWqeCost: "perWqeRate",
+                          asqpmCost: "asqpmRate",
+                          labTechCost: "labTechRate",
+                          projectManagerCost: "projectManagerRate",
+                        };
+
+                        const rateField = rateFieldMap[field.name];
+                        const hasRateCard = !!rateField;
+
+                        return (
+                          <div
+                            key={field.name}
+                            className={`px-6 py-3 ${
+                              hasRateCard
+                                ? "grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,160px)_minmax(0,160px)] sm:items-center"
+                                : "grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,260px)] sm:items-center"
+                            }`}
+                          >
+                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                              {field.label}
+                            </label>
+                            {hasRateCard && (
+                              <div className="space-y-1">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Rate Card</p>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  name={rateField}
+                                  value={template.data[rateField]}
+                                  onChange={(event) => handleInputChange(template.id, event)}
+                                  placeholder="Enter rate"
+                                  readOnly={template.isSaved}
+                                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all ${
+                                    template.isSaved
+                                      ? "border-slate-300 bg-slate-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-300"
+                                      : "border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  }`}
+                                />
+                              </div>
+                            )}
+                            <div className={hasRateCard ? "" : ""}>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                                {hasRateCard ? "Total" : ""}
+                              </p>
+                              <input
+                                readOnly
+                                value={
+                                  field.kind === "currency"
+                                    ? formatCurrency(computed[field.name])
+                                    : formatNumber(computed[field.name])
+                                }
+                                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {!template.isSaved ? (
