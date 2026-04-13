@@ -270,9 +270,9 @@ const calculateTemplateValues = (template: BudgetTemplate): ComputedTemplateValu
   const leadCost = durationWeeks * leadRate;
   const sqpmCost = durationWeeks * sqpmRate * sqpmFactor;
   const plCost = durationWeeks * plRate * plFactor;
-  const perWqeCost = durationWeeks * perWqeRate * perWqeFactor;
+  const perWqeCost = durationWeeks * perWqeRate * perWqeFactor * 6;
   const asqpmCost = durationWeeks * asqpmRate * asqpmFactor;
-  const labTechCost = durationWeeks * labTechRate * labTechFactor;
+  const labTechCost = durationWeeks * labTechRate * labTechFactor * 2;
   const projectManagerCost = durationWeeks * projectManagerRate * projectManagerFactor;
   const totalBudget =
     manualHcCost +
