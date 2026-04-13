@@ -44,6 +44,7 @@ type TemplateEntry = {
   data: BudgetTemplate;
   isExpanded: boolean;
   isSaved: boolean;
+  historyId?: string;
 };
 
 type ComputedTemplateValues = {
@@ -355,15 +356,36 @@ export default function TeamForm() {
       previousTemplates.map((template) => {
         if (template.id === templateId) {
           const computed = calculateTemplateValues(template.data);
-          setHistory((previousHistory) => [
-            ...previousHistory,
-            {
-              id: crypto.randomUUID(),
-              data: { ...template.data },
-              savedAt: new Date().toLocaleString(),
-              computed,
-            },
-          ]);
+
+          if (template.historyId) {
+            // Update existing history entry
+            setHistory((previousHistory) =>
+              previousHistory.map((entry) =>
+                entry.id === template.historyId
+                  ? {
+                      ...entry,
+                      data: { ...template.data },
+                      computed,
+                      savedAt: new Date().toLocaleString(),
+                    }
+                  : entry,
+              ),
+            );
+          } else {
+            // Create new history entry
+            const newHistoryId = crypto.randomUUID();
+            setHistory((previousHistory) => [
+              ...previousHistory,
+              {
+                id: newHistoryId,
+                data: { ...template.data },
+                savedAt: new Date().toLocaleString(),
+                computed,
+              },
+            ]);
+            return { ...template, isSaved: true, isExpanded: false, historyId: newHistoryId };
+          }
+
           return { ...template, isSaved: true, isExpanded: false };
         }
         return template;
@@ -386,11 +408,12 @@ export default function TeamForm() {
       const templateToDuplicate = previousTemplates.find((t) => t.id === templateId);
       if (!templateToDuplicate) return previousTemplates;
 
-      const newEntry = {
+      const newEntry: TemplateEntry = {
         id: crypto.randomUUID(),
         data: { ...templateToDuplicate.data },
         isExpanded: true,
         isSaved: false,
+        // Don't copy historyId - this creates a new entry
       };
 
       return [...previousTemplates, newEntry];
