@@ -19,7 +19,6 @@ import {
 
 type BudgetTemplate = {
   validationRunName: string;
-  budget: string;
   tcCount: string;
   startDate: string;
   endDate: string;
@@ -37,6 +36,15 @@ type BudgetTemplate = {
   asqpmFactor: string;
   labTechFactor: string;
   projectManagerFactor: string;
+  manualHcRate: string;
+  automationHcRate: string;
+  leadRate: string;
+  sqpmRate: string;
+  plRate: string;
+  perWqeRate: string;
+  asqpmRate: string;
+  labTechRate: string;
+  projectManagerRate: string;
 };
 
 type TemplateEntry = {
@@ -44,6 +52,7 @@ type TemplateEntry = {
   data: BudgetTemplate;
   isExpanded: boolean;
   isSaved: boolean;
+  historyId?: string;
 };
 
 type ComputedTemplateValues = {
@@ -67,9 +76,15 @@ type ComputedTemplateValues = {
   totalBudget: number;
 };
 
+type HistoryEntry = {
+  id: string;
+  data: BudgetTemplate;
+  savedAt: string;
+  computed: ComputedTemplateValues;
+};
+
 const createBudgetTemplate = (): BudgetTemplate => ({
   validationRunName: "",
-  budget: "",
   tcCount: "",
   startDate: "",
   endDate: "",
@@ -87,6 +102,15 @@ const createBudgetTemplate = (): BudgetTemplate => ({
   asqpmFactor: "0.8",
   labTechFactor: "0.4",
   projectManagerFactor: "0.4",
+  manualHcRate: "",
+  automationHcRate: "",
+  leadRate: "",
+  sqpmRate: "",
+  plRate: "",
+  perWqeRate: "",
+  asqpmRate: "",
+  labTechRate: "",
+  projectManagerRate: "",
 });
 
 const createTemplateEntry = (): TemplateEntry => ({
@@ -119,7 +143,6 @@ const inputRows: Array<Array<{
     },
   ],
   [
-    { label: "Rate card", name: "budget", type: "number", step: "0.01", placeholder: "$0.00" },
     { label: "TC Count", name: "tcCount", type: "number", step: "0.01" },
   ],
   [
@@ -212,7 +235,15 @@ const getBusinessDaysInclusive = (startDate: string, endDate: string) => {
 
 const calculateTemplateValues = (template: BudgetTemplate): ComputedTemplateValues => {
   const tcCount = parseNumber(template.tcCount);
-  const budget = parseNumber(template.budget);
+  const manualHcRate = parseNumber(template.manualHcRate);
+  const automationHcRate = parseNumber(template.automationHcRate);
+  const leadRate = parseNumber(template.leadRate);
+  const sqpmRate = parseNumber(template.sqpmRate);
+  const plRate = parseNumber(template.plRate);
+  const perWqeRate = parseNumber(template.perWqeRate);
+  const asqpmRate = parseNumber(template.asqpmRate);
+  const labTechRate = parseNumber(template.labTechRate);
+  const projectManagerRate = parseNumber(template.projectManagerRate);
   const manualTcFactor = parseNumber(template.manualTcFactor);
   const automationTcFactor = parseNumber(template.automationTcFactor);
   const adhocRequestFactor = parseNumber(template.adhocRequestFactor);
@@ -234,15 +265,15 @@ const calculateTemplateValues = (template: BudgetTemplate): ComputedTemplateValu
   const durationWeeks = durationDays * durationWeekFactor;
   const manualHc = durationDays > 0 ? (manualTcCount + adhocRequest) / durationDays / manualHcDivisor : 0;
   const automationHc = durationDays > 0 ? automationTcCount / durationDays / automationHcDivisor : 0;
-  const manualHcCost = manualHc * budget * durationWeeks;
-  const automationHcCost = automationHc * budget * durationWeeks;
-  const leadCost = durationWeeks * budget;
-  const sqpmCost = durationWeeks * budget * sqpmFactor;
-  const plCost = durationWeeks * budget * plFactor;
-  const perWqeCost = durationWeeks * budget * perWqeFactor;
-  const asqpmCost = durationWeeks * budget * asqpmFactor;
-  const labTechCost = durationWeeks * budget * labTechFactor;
-  const projectManagerCost = durationWeeks * budget * projectManagerFactor;
+  const manualHcCost = manualHc * manualHcRate * durationWeeks;
+  const automationHcCost = automationHc * automationHcRate * durationWeeks;
+  const leadCost = durationWeeks * leadRate;
+  const sqpmCost = durationWeeks * sqpmRate * sqpmFactor;
+  const plCost = durationWeeks * plRate * plFactor;
+  const perWqeCost = durationWeeks * perWqeRate * perWqeFactor * 6;
+  const asqpmCost = durationWeeks * asqpmRate * asqpmFactor;
+  const labTechCost = durationWeeks * labTechRate * labTechFactor * 2;
+  const projectManagerCost = durationWeeks * projectManagerRate * projectManagerFactor;
   const totalBudget =
     manualHcCost +
     automationHcCost +
@@ -300,6 +331,7 @@ export default function TeamForm() {
   const [templates, setTemplates] = useState<TemplateEntry[]>([
     createTemplateEntry(),
   ]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   const handleInputChange = (
     templateId: string,
@@ -344,11 +376,43 @@ export default function TeamForm() {
 
   const saveTemplate = (templateId: string) => {
     setTemplates((previousTemplates) =>
-      previousTemplates.map((template) =>
-        template.id === templateId
-          ? { ...template, isSaved: true, isExpanded: false }
-          : template,
-      ),
+      previousTemplates.map((template) => {
+        if (template.id === templateId) {
+          const computed = calculateTemplateValues(template.data);
+
+          if (template.historyId) {
+            // Update existing history entry
+            setHistory((previousHistory) =>
+              previousHistory.map((entry) =>
+                entry.id === template.historyId
+                  ? {
+                      ...entry,
+                      data: { ...template.data },
+                      computed,
+                      savedAt: new Date().toLocaleString(),
+                    }
+                  : entry,
+              ),
+            );
+          } else {
+            // Create new history entry
+            const newHistoryId = crypto.randomUUID();
+            setHistory((previousHistory) => [
+              ...previousHistory,
+              {
+                id: newHistoryId,
+                data: { ...template.data },
+                savedAt: new Date().toLocaleString(),
+                computed,
+              },
+            ]);
+            return { ...template, isSaved: true, isExpanded: false, historyId: newHistoryId };
+          }
+
+          return { ...template, isSaved: true, isExpanded: false };
+        }
+        return template;
+      }),
     );
   };
 
@@ -360,6 +424,34 @@ export default function TeamForm() {
           : template,
       ),
     );
+  };
+
+  const duplicateTemplate = (templateId: string) => {
+    setTemplates((previousTemplates) => {
+      const templateToDuplicate = previousTemplates.find((t) => t.id === templateId);
+      if (!templateToDuplicate) return previousTemplates;
+
+      const newEntry: TemplateEntry = {
+        id: crypto.randomUUID(),
+        data: { ...templateToDuplicate.data },
+        isExpanded: true,
+        isSaved: false,
+        // Don't copy historyId - this creates a new entry
+      };
+
+      return [...previousTemplates, newEntry];
+    });
+  };
+
+  const editFromHistory = (historyEntry: HistoryEntry) => {
+    const newEntry: TemplateEntry = {
+      id: crypto.randomUUID(),
+      data: { ...historyEntry.data },
+      isExpanded: true,
+      isSaved: false,
+    };
+
+    setTemplates((previousTemplates) => [...previousTemplates, newEntry]);
   };
 
   return (
@@ -461,7 +553,7 @@ export default function TeamForm() {
                     </span>
                   </button>
 
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                     {template.isSaved ? (
                       <>
                         <button
@@ -469,7 +561,7 @@ export default function TeamForm() {
                           onClick={() => {
                             setTemplates((previousTemplates) =>
                               previousTemplates.map((t) =>
-                                t.id === template.id ? { ...t, isSaved: false } : t,
+                                t.id === template.id ? { ...t, isSaved: false, isExpanded: true } : t,
                               ),
                             );
                           }}
@@ -477,6 +569,14 @@ export default function TeamForm() {
                         >
                           <Edit3 className="h-4 w-4" />
                           Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => duplicateTemplate(template.id)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Duplicate
                         </button>
                       </>
                     ) : null}
@@ -538,25 +638,70 @@ export default function TeamForm() {
                     </div>
 
                     <div className="divide-y divide-slate-200 dark:divide-slate-800">
-                      {computedRows.map((field) => (
-                        <div
-                          key={field.name}
-                          className="grid gap-3 px-6 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,260px)] sm:items-center"
-                        >
-                          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                            {field.label}
-                          </label>
-                          <input
-                            readOnly
-                            value={
-                              field.kind === "currency"
-                                ? formatCurrency(computed[field.name])
-                                : formatNumber(computed[field.name])
-                            }
-                            className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                          />
-                        </div>
-                      ))}
+                      {computedRows.map((field) => {
+                        const rateFieldMap: Record<string, keyof BudgetTemplate> = {
+                          manualHcCost: "manualHcRate",
+                          automationHcCost: "automationHcRate",
+                          leadCost: "leadRate",
+                          sqpmCost: "sqpmRate",
+                          plCost: "plRate",
+                          perWqeCost: "perWqeRate",
+                          asqpmCost: "asqpmRate",
+                          labTechCost: "labTechRate",
+                          projectManagerCost: "projectManagerRate",
+                        };
+
+                        const rateField = rateFieldMap[field.name];
+                        const hasRateCard = !!rateField;
+
+                        return (
+                          <div
+                            key={field.name}
+                            className={`px-6 py-3 ${
+                              hasRateCard
+                                ? "grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,160px)_minmax(0,160px)] sm:items-center"
+                                : "grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,260px)] sm:items-center"
+                            }`}
+                          >
+                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                              {field.label}
+                            </label>
+                            {hasRateCard && (
+                              <div className="space-y-1">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Rate Card</p>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  name={rateField}
+                                  value={template.data[rateField]}
+                                  onChange={(event) => handleInputChange(template.id, event)}
+                                  placeholder="Enter rate"
+                                  readOnly={template.isSaved}
+                                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all ${
+                                    template.isSaved
+                                      ? "border-slate-300 bg-slate-100 text-slate-900 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-300"
+                                      : "border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  }`}
+                                />
+                              </div>
+                            )}
+                            <div className={hasRateCard ? "" : ""}>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                                {hasRateCard ? "Total" : ""}
+                              </p>
+                              <input
+                                readOnly
+                                value={
+                                  field.kind === "currency"
+                                    ? formatCurrency(computed[field.name])
+                                    : formatNumber(computed[field.name])
+                                }
+                                className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {!template.isSaved ? (
@@ -642,6 +787,57 @@ export default function TeamForm() {
             );
           })}
         </div>
+
+        {history.length > 0 && (
+          <div className="mt-16">
+            <h2 className="mb-6 text-2xl font-bold text-slate-900 dark:text-white">
+              Allocation History
+            </h2>
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800">
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Validation Run Name
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Date Range
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Total Budget
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Saved At
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  {history.map((entry) => (
+                    <tr
+                      key={entry.id}
+                      className="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800"
+                    >
+                      <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
+                        {entry.data.validationRunName || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                        {entry.data.startDate && entry.data.endDate
+                          ? `${entry.data.startDate} to ${entry.data.endDate}`
+                          : "—"}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">
+                        {formatCurrency(entry.computed.totalBudget)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                        {entry.savedAt}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
