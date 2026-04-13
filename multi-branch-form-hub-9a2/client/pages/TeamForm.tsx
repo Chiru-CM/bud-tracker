@@ -67,6 +67,13 @@ type ComputedTemplateValues = {
   totalBudget: number;
 };
 
+type HistoryEntry = {
+  id: string;
+  data: BudgetTemplate;
+  savedAt: string;
+  computed: ComputedTemplateValues;
+};
+
 const createBudgetTemplate = (): BudgetTemplate => ({
   validationRunName: "",
   budget: "",
@@ -300,6 +307,7 @@ export default function TeamForm() {
   const [templates, setTemplates] = useState<TemplateEntry[]>([
     createTemplateEntry(),
   ]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   const handleInputChange = (
     templateId: string,
@@ -344,11 +352,22 @@ export default function TeamForm() {
 
   const saveTemplate = (templateId: string) => {
     setTemplates((previousTemplates) =>
-      previousTemplates.map((template) =>
-        template.id === templateId
-          ? { ...template, isSaved: true, isExpanded: false }
-          : template,
-      ),
+      previousTemplates.map((template) => {
+        if (template.id === templateId) {
+          const computed = calculateTemplateValues(template.data);
+          setHistory((previousHistory) => [
+            ...previousHistory,
+            {
+              id: crypto.randomUUID(),
+              data: { ...template.data },
+              savedAt: new Date().toLocaleString(),
+              computed,
+            },
+          ]);
+          return { ...template, isSaved: true, isExpanded: false };
+        }
+        return template;
+      }),
     );
   };
 
@@ -360,6 +379,33 @@ export default function TeamForm() {
           : template,
       ),
     );
+  };
+
+  const duplicateTemplate = (templateId: string) => {
+    setTemplates((previousTemplates) => {
+      const templateToDuplicate = previousTemplates.find((t) => t.id === templateId);
+      if (!templateToDuplicate) return previousTemplates;
+
+      const newEntry = {
+        id: crypto.randomUUID(),
+        data: { ...templateToDuplicate.data },
+        isExpanded: true,
+        isSaved: false,
+      };
+
+      return [...previousTemplates, newEntry];
+    });
+  };
+
+  const editFromHistory = (historyEntry: HistoryEntry) => {
+    const newEntry: TemplateEntry = {
+      id: crypto.randomUUID(),
+      data: { ...historyEntry.data },
+      isExpanded: true,
+      isSaved: false,
+    };
+
+    setTemplates((previousTemplates) => [...previousTemplates, newEntry]);
   };
 
   return (
@@ -461,7 +507,7 @@ export default function TeamForm() {
                     </span>
                   </button>
 
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                     {template.isSaved ? (
                       <>
                         <button
@@ -477,6 +523,14 @@ export default function TeamForm() {
                         >
                           <Edit3 className="h-4 w-4" />
                           Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => duplicateTemplate(template.id)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Duplicate
                         </button>
                       </>
                     ) : null}
@@ -642,6 +696,91 @@ export default function TeamForm() {
             );
           })}
         </div>
+
+        {history.length > 0 && (
+          <div className="mt-16">
+            <h2 className="mb-6 text-2xl font-bold text-slate-900 dark:text-white">
+              Allocation History
+            </h2>
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800">
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Validation Run Name
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Date Range
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Total Budget
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Saved At
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  {history.map((entry) => (
+                    <tr
+                      key={entry.id}
+                      className="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800"
+                    >
+                      <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
+                        {entry.data.validationRunName || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                        {entry.data.startDate && entry.data.endDate
+                          ? `${entry.data.startDate} to ${entry.data.endDate}`
+                          : "—"}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">
+                        {formatCurrency(entry.computed.totalBudget)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                        {entry.savedAt}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => editFromHistory(entry)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                          >
+                            <Edit3 className="h-3 w-3" />
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newEntry: TemplateEntry = {
+                                id: crypto.randomUUID(),
+                                data: { ...entry.data },
+                                isExpanded: true,
+                                isSaved: false,
+                              };
+                              setTemplates((previousTemplates) => [
+                                ...previousTemplates,
+                                newEntry,
+                              ]);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Duplicate
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
