@@ -90,6 +90,19 @@ type HistoryEntry = {
   computed: ComputedTemplateValues;
 };
 
+type ChangeLog = {
+  id: string;
+  timestamp: string;
+  action: "created" | "edited" | "duplicated" | "deleted";
+  runName: string;
+  budgetIndex: number;
+  fieldChanges?: Array<{
+    fieldName: string;
+    oldValue: string;
+    newValue: string;
+  }>;
+};
+
 const createBudgetTemplate = (): BudgetTemplate => ({
   validationRunName: "",
   tcCount: "",
@@ -352,12 +365,14 @@ export default function TeamForm() {
 
   const [validationRuns, setValidationRuns] = useState<ValidationRun[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [changeLog, setChangeLog] = useState<ChangeLog[]>([]);
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
   const [validationRunInput, setValidationRunInput] = useState("");
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [modalValidationRunId, setModalValidationRunId] = useState<string | null>(null);
   const [modalBudgetIndex, setModalBudgetIndex] = useState<number | null>(null);
   const [budgetFormData, setBudgetFormData] = useState<BudgetTemplate>(createBudgetTemplate());
+  const [originalBudgetData, setOriginalBudgetData] = useState<BudgetTemplate | null>(null);
 
   const handleInputChange = (
     templateId: string,
@@ -407,6 +422,7 @@ export default function TeamForm() {
 
   const addBudgetToRun = (validationRunId: string) => {
     setBudgetFormData(createBudgetTemplate());
+    setOriginalBudgetData(null);
     setModalValidationRunId(validationRunId);
     setModalBudgetIndex(null); // For new budget
     setIsBudgetModalOpen(true);
@@ -416,6 +432,7 @@ export default function TeamForm() {
     const run = validationRuns.find((r) => r.id === validationRunId);
     if (run && run.budgets[budgetIndex]) {
       setBudgetFormData(run.budgets[budgetIndex]);
+      setOriginalBudgetData(run.budgets[budgetIndex]);
       setModalValidationRunId(validationRunId);
       setModalBudgetIndex(budgetIndex);
       setIsBudgetModalOpen(true);
@@ -430,10 +447,51 @@ export default function TeamForm() {
         if (run.id !== modalValidationRunId) return run;
 
         const newBudgets = [...run.budgets];
+        const isNewBudget = modalBudgetIndex === null;
+        const budgetIndex = isNewBudget ? newBudgets.length : modalBudgetIndex;
+
         if (modalBudgetIndex !== null) {
           newBudgets[modalBudgetIndex] = budgetFormData;
         } else {
           newBudgets.push(budgetFormData);
+        }
+
+        // Track changes
+        if (isNewBudget) {
+          setChangeLog((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              timestamp: new Date().toLocaleString(),
+              action: "created",
+              runName: run.name,
+              budgetIndex: budgetIndex,
+            },
+          ]);
+        } else if (originalBudgetData) {
+          const fieldChanges = [];
+          for (const key in originalBudgetData) {
+            if (originalBudgetData[key as keyof BudgetTemplate] !== budgetFormData[key as keyof BudgetTemplate]) {
+              fieldChanges.push({
+                fieldName: key,
+                oldValue: String(originalBudgetData[key as keyof BudgetTemplate]),
+                newValue: String(budgetFormData[key as keyof BudgetTemplate]),
+              });
+            }
+          }
+          if (fieldChanges.length > 0) {
+            setChangeLog((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                timestamp: new Date().toLocaleString(),
+                action: "edited",
+                runName: run.name,
+                budgetIndex: budgetIndex,
+                fieldChanges,
+              },
+            ]);
+          }
         }
 
         return { ...run, budgets: newBudgets };
@@ -443,6 +501,7 @@ export default function TeamForm() {
     setModalValidationRunId(null);
     setModalBudgetIndex(null);
     setBudgetFormData(createBudgetTemplate());
+    setOriginalBudgetData(null);
   };
 
   const handleBudgetFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -489,6 +548,20 @@ export default function TeamForm() {
   };
 
   const removeBudget = (validationRunId: string, budgetIndex: number) => {
+    const run = validationRuns.find((r) => r.id === validationRunId);
+    if (run) {
+      setChangeLog((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          timestamp: new Date().toLocaleString(),
+          action: "deleted",
+          runName: run.name,
+          budgetIndex: budgetIndex,
+        },
+      ]);
+    }
+
     setValidationRuns((previousRuns) =>
       previousRuns.map((run) => {
         if (run.id !== validationRunId) return run;
@@ -718,9 +791,21 @@ export default function TeamForm() {
                               type="button"
                               onClick={() => {
                                 setBudgetFormData({ ...budget });
+                                setOriginalBudgetData(null);
                                 setModalValidationRunId(validationRun.id);
                                 setModalBudgetIndex(null);
                                 setIsBudgetModalOpen(true);
+                                // Log duplicate action
+                                setChangeLog((prev) => [
+                                  ...prev,
+                                  {
+                                    id: crypto.randomUUID(),
+                                    timestamp: new Date().toLocaleString(),
+                                    action: "duplicated",
+                                    runName: validationRun.name,
+                                    budgetIndex: budgetIndex,
+                                  },
+                                ]);
                               }}
                               className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                             >
@@ -762,6 +847,78 @@ export default function TeamForm() {
             </section>
           ))}
         </div>
+
+        {changeLog.length > 0 && (
+          <div className="mt-16">
+            <h2 className="mb-6 text-2xl font-bold text-slate-900 dark:text-white">
+              Change History
+            </h2>
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800">
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Time
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Action
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Run Name
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Budget #
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Changes
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  {[...changeLog].reverse().map((entry) => (
+                    <tr
+                      key={entry.id}
+                      className="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800"
+                    >
+                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                        {entry.timestamp}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                          entry.action === "created" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
+                          entry.action === "edited" ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" :
+                          entry.action === "duplicated" ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" :
+                          "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                        }`}>
+                          {entry.action.charAt(0).toUpperCase() + entry.action.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
+                        {entry.runName}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                        {entry.budgetIndex + 1}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        {entry.fieldChanges && entry.fieldChanges.length > 0 ? (
+                          <div className="space-y-1">
+                            {entry.fieldChanges.map((change, idx) => (
+                              <div key={idx} className="text-slate-700 dark:text-slate-300">
+                                <span className="font-medium">{change.fieldName}:</span> {change.oldValue} → {change.newValue}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-slate-500 dark:text-slate-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {history.length > 0 && (
           <div className="mt-16">
@@ -883,6 +1040,7 @@ export default function TeamForm() {
                   setModalValidationRunId(null);
                   setModalBudgetIndex(null);
                   setBudgetFormData(createBudgetTemplate());
+                  setOriginalBudgetData(null);
                 }}
                 className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               >
@@ -998,6 +1156,7 @@ export default function TeamForm() {
                   setModalValidationRunId(null);
                   setModalBudgetIndex(null);
                   setBudgetFormData(createBudgetTemplate());
+                  setOriginalBudgetData(null);
                 }}
                 className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-6 py-2 font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
               >
