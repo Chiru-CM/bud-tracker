@@ -716,7 +716,12 @@ export default function TeamForm() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => duplicateBudget(validationRun.id, budgetIndex)}
+                              onClick={() => {
+                                setBudgetFormData({ ...budget });
+                                setModalValidationRunId(validationRun.id);
+                                setModalBudgetIndex(null);
+                                setIsBudgetModalOpen(true);
+                              }}
                               className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                             >
                               <Plus className="h-4 w-4" />
