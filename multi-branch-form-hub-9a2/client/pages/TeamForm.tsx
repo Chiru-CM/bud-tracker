@@ -177,6 +177,21 @@ const inputRows: Array<Array<{
     { label: "Lab technician and manager factor", name: "labTechFactor", type: "number", step: "0.01" },
     { label: "Project manager factor", name: "projectManagerFactor", type: "number", step: "0.01" },
   ],
+  [
+    { label: "Manual HC Rate", name: "manualHcRate", type: "number", step: "0.01" },
+    { label: "Automation HC Rate", name: "automationHcRate", type: "number", step: "0.01" },
+    { label: "Lead Rate", name: "leadRate", type: "number", step: "0.01" },
+  ],
+  [
+    { label: "SQPM Rate", name: "sqpmRate", type: "number", step: "0.01" },
+    { label: "PL Rate", name: "plRate", type: "number", step: "0.01" },
+    { label: "Per WQE Rate", name: "perWqeRate", type: "number", step: "0.01" },
+  ],
+  [
+    { label: "aSQPM Rate", name: "asqpmRate", type: "number", step: "0.01" },
+    { label: "Lab Tech Rate", name: "labTechRate", type: "number", step: "0.01" },
+    { label: "Project Manager Rate", name: "projectManagerRate", type: "number", step: "0.01" },
+  ],
 ];
 
 const computedRows: Array<{ label: string; name: keyof ComputedTemplateValues; kind: "count" | "currency" }> = [
@@ -887,22 +902,20 @@ export default function TeamForm() {
                     }`}
                   >
                     {row.map((field) => (
-                      field.name !== "validationRunName" && (
-                        <div key={field.name} className="space-y-2">
-                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                            {field.label}
-                          </label>
-                          <input
-                            type={field.type}
-                            name={field.name}
-                            value={budgetFormData[field.name]}
-                            onChange={handleBudgetFormChange}
-                            step={field.step}
-                            placeholder={field.placeholder}
-                            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                          />
-                        </div>
-                      )
+                      <div key={field.name} className="space-y-2">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                          {field.label}
+                        </label>
+                        <input
+                          type={field.type}
+                          name={field.name}
+                          value={budgetFormData[field.name]}
+                          onChange={handleBudgetFormChange}
+                          step={field.step}
+                          placeholder={field.placeholder}
+                          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        />
+                      </div>
                     ))}
                   </div>
                 ))}
@@ -911,37 +924,25 @@ export default function TeamForm() {
               {(() => {
                 const computed = calculateTemplateValues(budgetFormData);
                 return (
-                  <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
-                    <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Budget Summary
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">Total Budget</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                          {formatCurrency(computed.totalBudget)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">Total TC</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                          {formatNumber(computed.totalTc)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">Duration (days)</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                          {formatNumber(computed.durationDays)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">Manual HC</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">
-                          {formatNumber(computed.manualHc)}
-                        </p>
+                  <>
+                    <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                      <h3 className="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Computed Values
+                      </h3>
+                      <div className="space-y-4">
+                        {computedRows.map((row) => (
+                          <div key={row.name} className="flex items-center justify-between">
+                            <p className="text-sm text-slate-600 dark:text-slate-400">{row.label}</p>
+                            <p className="font-semibold text-slate-900 dark:text-white">
+                              {row.kind === "currency"
+                                ? formatCurrency(computed[row.name])
+                                : formatNumber(computed[row.name])}
+                            </p>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </div>
+                  </>
                 );
               })()}
             </div>
