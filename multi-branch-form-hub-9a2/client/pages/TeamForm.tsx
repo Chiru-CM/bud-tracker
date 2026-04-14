@@ -332,6 +332,8 @@ export default function TeamForm() {
     createTemplateEntry(),
   ]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTemplateId, setModalTemplateId] = useState<string | null>(null);
 
   const handleInputChange = (
     templateId: string,
@@ -360,10 +362,13 @@ export default function TeamForm() {
   };
 
   const addTemplate = () => {
+    const newTemplate = createTemplateEntry();
     setTemplates((previousTemplates) => [
       ...previousTemplates,
-      createTemplateEntry(),
+      newTemplate,
     ]);
+    setModalTemplateId(newTemplate.id);
+    setIsModalOpen(true);
   };
 
   const removeTemplate = (templateId: string) => {
@@ -839,6 +844,163 @@ export default function TeamForm() {
           </div>
         )}
       </div>
+
+      {/* Modal for adding validation run and budget */}
+      {isModalOpen && modalTemplateId && (() => {
+        const modalTemplate = templates.find((t) => t.id === modalTemplateId);
+        if (!modalTemplate) return null;
+
+        const computed = calculateTemplateValues(modalTemplate.data);
+        const validationRunFilled = modalTemplate.data.validationRunName.trim() !== "";
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 shadow-2xl">
+              {/* Modal Header */}
+              <div className="sticky top-0 border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  {validationRunFilled ? "Budget Form" : "Add Validation Run"}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setModalTemplateId(null);
+                  }}
+                  className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6">
+                {/* Validation Run Name Section */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Validation run name
+                  </label>
+                  <input
+                    type="text"
+                    name="validationRunName"
+                    value={modalTemplate.data.validationRunName}
+                    onChange={(event) => handleInputChange(modalTemplate.id, event)}
+                    placeholder="Enter validation run name"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                </div>
+
+                {/* Budget Form - shown after validation run is filled */}
+                {validationRunFilled && (
+                  <>
+                    <div className="mb-6 space-y-4">
+                      <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Inputs and factors
+                      </h3>
+                      {inputRows.map((row, rowIndex) => (
+                        <div
+                          key={rowIndex}
+                          className={`grid gap-4 ${
+                            row.length === 1
+                              ? "md:grid-cols-1"
+                              : row.length === 2
+                                ? "md:grid-cols-2"
+                                : "md:grid-cols-3"
+                          }`}
+                        >
+                          {row.map((field) => (
+                            // Skip validation run name field as it's already shown above
+                            field.name !== "validationRunName" && (
+                              <div key={field.name} className="space-y-2">
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                  {field.label}
+                                </label>
+                                <input
+                                  type={field.type}
+                                  name={field.name}
+                                  value={modalTemplate.data[field.name]}
+                                  onChange={(event) => handleInputChange(modalTemplate.id, event)}
+                                  step={field.step}
+                                  placeholder={field.placeholder}
+                                  className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                />
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Computed Values Summary */}
+                    <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                      <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Budget Summary
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">Total Budget</p>
+                          <p className="font-semibold text-slate-900 dark:text-white">
+                            {formatCurrency(computed.totalBudget)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">Total TC</p>
+                          <p className="font-semibold text-slate-900 dark:text-white">
+                            {formatNumber(computed.totalTc)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">Duration (days)</p>
+                          <p className="font-semibold text-slate-900 dark:text-white">
+                            {formatNumber(computed.durationDays)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">Manual HC</p>
+                          <p className="font-semibold text-slate-900 dark:text-white">
+                            {formatNumber(computed.manualHc)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-800 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setModalTemplateId(null);
+                    if (!validationRunFilled) {
+                      removeTemplate(modalTemplate.id);
+                    }
+                  }}
+                  className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-6 py-2 font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  Cancel
+                </button>
+                {validationRunFilled && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      saveTemplate(modalTemplate.id);
+                      setIsModalOpen(false);
+                      setModalTemplateId(null);
+                    }}
+                    className={`inline-flex items-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-6 py-2 font-semibold text-white transition-all hover:shadow-lg`}
+                  >
+                    <Save className="h-4 w-4" />
+                    Save
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
