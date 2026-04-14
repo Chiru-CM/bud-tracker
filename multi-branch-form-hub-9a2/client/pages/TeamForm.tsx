@@ -925,79 +925,62 @@ export default function TeamForm() {
 
               {(() => {
                 const computed = calculateTemplateValues(budgetFormData);
-                const rateFields = [
+                const costFieldsWithRates = [
                   { label: "Manual HC Cost", computedName: "manualHcCost" as const, rateName: "manualHcRate" as const },
                   { label: "Automation HC Cost", computedName: "automationHcCost" as const, rateName: "automationHcRate" as const },
                   { label: "Lead Cost", computedName: "leadCost" as const, rateName: "leadRate" as const },
                   { label: "SQPM Cost of Boise", computedName: "sqpmCost" as const, rateName: "sqpmRate" as const },
-                  { label: "PL Cost", computedName: "plCost" as const, rateName: "plRate" as const },
-                  { label: "Per WQE Cost", computedName: "perWqeCost" as const, rateName: "perWqeRate" as const },
-                  { label: "aSQPM Cost", computedName: "asqpmCost" as const, rateName: "asqpmRate" as const },
-                  { label: "Lab Tech Cost", computedName: "labTechCost" as const, rateName: "labTechRate" as const },
-                  { label: "Project Manager Cost", computedName: "projectManagerCost" as const, rateName: "projectManagerRate" as const },
+                  { label: "PL", computedName: "plCost" as const, rateName: "plRate" as const },
+                  { label: "Per WQE", computedName: "perWqeCost" as const, rateName: "perWqeRate" as const },
+                  { label: "aSQPM", computedName: "asqpmCost" as const, rateName: "asqpmRate" as const },
+                  { label: "Lab technician and manager", computedName: "labTechCost" as const, rateName: "labTechRate" as const },
+                  { label: "Project manager", computedName: "projectManagerCost" as const, rateName: "projectManagerRate" as const },
                 ];
 
                 return (
-                  <>
-                    <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
-                      <h3 className="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Cost Rates & Summary
-                      </h3>
-                      <div className="space-y-4">
-                        {rateFields.map((field) => (
-                          <div key={field.computedName} className="grid grid-cols-3 gap-3 items-end">
-                            <div>
-                              <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">{field.label} Rate</p>
+                  <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                    <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Computed Values
+                    </h3>
+                    <div className="space-y-3">
+                      {computedRows.map((row) => {
+                        const costField = costFieldsWithRates.find(f => f.computedName === row.name);
+                        if (costField) {
+                          return (
+                            <div key={row.name} className="flex items-center gap-3">
+                              <div className="flex-1">
+                                <p className="text-sm text-slate-600 dark:text-slate-400">{row.label}</p>
+                              </div>
                               <input
                                 type="number"
-                                name={field.rateName}
-                                value={budgetFormData[field.rateName]}
+                                name={costField.rateName}
+                                value={budgetFormData[costField.rateName]}
                                 onChange={handleBudgetFormChange}
                                 step="0.01"
-                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                placeholder="Rate"
+                                className="w-20 rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                               />
-                            </div>
-                            <div>
-                              <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">{field.label}</p>
-                              <p className="font-semibold text-slate-900 dark:text-white text-sm">
-                                {formatCurrency(computed[field.computedName])}
+                              <p className="font-semibold text-slate-900 dark:text-white text-right min-w-[120px]">
+                                {row.kind === "currency"
+                                  ? formatCurrency(computed[row.name])
+                                  : formatNumber(computed[row.name])}
                               </p>
                             </div>
+                          );
+                        }
+                        return (
+                          <div key={row.name} className="flex items-center justify-between">
+                            <p className="text-sm text-slate-600 dark:text-slate-400">{row.label}</p>
+                            <p className="font-semibold text-slate-900 dark:text-white">
+                              {row.kind === "currency"
+                                ? formatCurrency(computed[row.name])
+                                : formatNumber(computed[row.name])}
+                            </p>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })}
                     </div>
-
-                    <div className="mb-6 rounded-xl border border-slate-200 bg-blue-50 p-4 dark:border-slate-700 dark:bg-slate-800">
-                      <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Total Summary
-                      </h3>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm text-slate-600 dark:text-slate-400">Total Budget</p>
-                          <p className="font-bold text-lg text-slate-900 dark:text-white">
-                            {formatCurrency(computed.totalBudget)}
-                          </p>
-                        </div>
-                        <div className="border-t border-slate-200 dark:border-slate-700 pt-2">
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div>
-                              <p className="text-xs text-slate-600 dark:text-slate-400">Total TC</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">
-                                {formatNumber(computed.totalTc)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-slate-600 dark:text-slate-400">Duration (days)</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">
-                                {formatNumber(computed.durationDays)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </>
+                  </div>
                 );
               })()}
             </div>
