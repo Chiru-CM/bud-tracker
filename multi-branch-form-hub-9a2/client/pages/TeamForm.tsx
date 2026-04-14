@@ -616,7 +616,7 @@ export default function TeamForm() {
             className={`inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-5 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl`}
           >
             <Plus className="h-4 w-4" />
-            Add budget
+            Add run
           </button>
         </div>
 
