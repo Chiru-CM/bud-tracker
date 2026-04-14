@@ -109,15 +109,15 @@ const createBudgetTemplate = (): BudgetTemplate => ({
   asqpmFactor: "0.8",
   labTechFactor: "0.4",
   projectManagerFactor: "0.4",
-  manualHcRate: "",
-  automationHcRate: "",
-  leadRate: "",
-  sqpmRate: "",
-  plRate: "",
-  perWqeRate: "",
-  asqpmRate: "",
-  labTechRate: "",
-  projectManagerRate: "",
+  manualHcRate: "100",
+  automationHcRate: "80",
+  leadRate: "150",
+  sqpmRate: "120",
+  plRate: "110",
+  perWqeRate: "90",
+  asqpmRate: "130",
+  labTechRate: "85",
+  projectManagerRate: "140",
 });
 
 const createTemplateEntry = (): TemplateEntry => ({
@@ -902,20 +902,22 @@ export default function TeamForm() {
                     }`}
                   >
                     {row.map((field) => (
-                      <div key={field.name} className="space-y-2">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                          {field.label}
-                        </label>
-                        <input
-                          type={field.type}
-                          name={field.name}
-                          value={budgetFormData[field.name]}
-                          onChange={handleBudgetFormChange}
-                          step={field.step}
-                          placeholder={field.placeholder}
-                          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                        />
-                      </div>
+                      field.name !== "validationRunName" && (
+                        <div key={field.name} className="space-y-2">
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                            {field.label}
+                          </label>
+                          <input
+                            type={field.type}
+                            name={field.name}
+                            value={budgetFormData[field.name]}
+                            onChange={handleBudgetFormChange}
+                            step={field.step}
+                            placeholder={field.placeholder}
+                            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                          />
+                        </div>
+                      )
                     ))}
                   </div>
                 ))}
