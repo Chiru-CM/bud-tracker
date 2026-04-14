@@ -801,7 +801,7 @@ export default function TeamForm() {
           <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 shadow-2xl">
             <div className="border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Add Validation Run
+                Add Run
               </h2>
               <button
                 type="button"
