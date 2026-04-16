@@ -719,7 +719,7 @@ export default function TeamForm() {
                 <button
                   type="button"
                   onClick={() => toggleValidationRun(validationRun.id)}
-                  className="flex flex-1 items-center justify-between gap-4 text-left"
+                  className="flex flex-1 items-center justify-between gap-4 text-left rounded-lg p-2 -ml-2 -mr-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   <div>
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white">
