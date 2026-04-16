@@ -187,21 +187,6 @@ const inputRows: Array<Array<{
     { label: "Lab technician and manager factor", name: "labTechFactor", type: "number", step: "0.01" },
     { label: "Project manager factor", name: "projectManagerFactor", type: "number", step: "0.01" },
   ],
-  [
-    { label: "Manual HC Rate", name: "manualHcRate", type: "number", step: "0.01" },
-    { label: "Automation HC Rate", name: "automationHcRate", type: "number", step: "0.01" },
-    { label: "Lead Rate", name: "leadRate", type: "number", step: "0.01" },
-  ],
-  [
-    { label: "SQPM Rate", name: "sqpmRate", type: "number", step: "0.01" },
-    { label: "PL Rate", name: "plRate", type: "number", step: "0.01" },
-    { label: "Per WQE Rate", name: "perWqeRate", type: "number", step: "0.01" },
-  ],
-  [
-    { label: "aSQPM Rate", name: "asqpmRate", type: "number", step: "0.01" },
-    { label: "Lab Tech Rate", name: "labTechRate", type: "number", step: "0.01" },
-    { label: "Project Manager Rate", name: "projectManagerRate", type: "number", step: "0.01" },
-  ],
 ];
 
 const computedRows: Array<{ label: string; name: keyof ComputedTemplateValues; kind: "count" | "currency" }> = [
