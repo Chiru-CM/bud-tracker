@@ -405,6 +405,57 @@ export default function RunDetails() {
     setExpandedVersions(newExpanded);
   };
 
+  const getChangedFields = (currentIndex: number): Array<{ field: string; oldValue: string; newValue: string }> => {
+    if (currentIndex === 0) {
+      return [];
+    }
+    const current = history[currentIndex];
+    const previous = history[currentIndex - 1];
+    const changes: Array<{ field: string; oldValue: string; newValue: string }> = [];
+
+    const fieldLabels: Record<string, string> = {
+      tcCount: "TC Count",
+      startDate: "Start Date",
+      endDate: "End Date",
+      durationDays: "Duration (Days)",
+      progress: "Progress",
+      manualTcFactor: "Manual TC Factor",
+      automationTcFactor: "Automation TC Factor",
+      adhocRequestFactor: "Adhoc Request Factor",
+      durationWeekFactor: "Duration Week Factor",
+      manualHcDivisor: "Manual HC Divisor",
+      automationHcDivisor: "Automation HC Divisor",
+      sqpmFactor: "SQPM Factor",
+      plFactor: "PL Factor",
+      perWqeFactor: "Per WQE Factor",
+      asqpmFactor: "aSQPM Factor",
+      labTechFactor: "Lab Tech Factor",
+      projectManagerFactor: "Project Manager Factor",
+      manualHcRate: "Manual HC Rate",
+      automationHcRate: "Automation HC Rate",
+      leadRate: "Lead Rate",
+      sqpmRate: "SQPM Rate",
+      plRate: "PL Rate",
+      perWqeRate: "Per WQE Rate",
+      asqpmRate: "aSQPM Rate",
+      labTechRate: "Lab Tech Rate",
+      projectManagerRate: "Project Manager Rate",
+    };
+
+    Object.keys(fieldLabels).forEach((key) => {
+      const typedKey = key as keyof BudgetTemplate;
+      if (current.data[typedKey] !== previous.data[typedKey]) {
+        changes.push({
+          field: fieldLabels[key],
+          oldValue: String(previous.data[typedKey]),
+          newValue: String(current.data[typedKey]),
+        });
+      }
+    });
+
+    return changes;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
@@ -621,6 +672,9 @@ export default function RunDetails() {
                       Total Budget
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Changes
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
                       Comments
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
@@ -629,30 +683,53 @@ export default function RunDetails() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {history.map((entry, index) => (
-                    <tr
-                      key={entry.id}
-                      className="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800"
-                    >
-                      <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
-                        Budget {index + 1}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
-                        {entry.data.startDate && entry.data.endDate
-                          ? `${entry.data.startDate} to ${entry.data.endDate}`
-                          : "—"}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">
-                        {formatCurrency(entry.computed.totalBudget)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 max-w-xs truncate">
-                        {entry.comments}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
-                        {entry.savedAt}
-                      </td>
-                    </tr>
-                  ))}
+                  {history.map((entry, index) => {
+                    const changes = getChangedFields(index);
+                    return (
+                      <tr
+                        key={entry.id}
+                        className="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800"
+                      >
+                        <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
+                          Budget {history.length - index}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                          {entry.data.startDate && entry.data.endDate
+                            ? `${entry.data.startDate} to ${entry.data.endDate}`
+                            : "—"}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">
+                          {formatCurrency(entry.computed.totalBudget)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                          {changes.length > 0 ? (
+                            <div className="space-y-1 max-h-16 overflow-y-auto">
+                              {changes.map((change, changeIndex) => (
+                                <div key={changeIndex} className="text-xs p-1 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-800">
+                                  <p className="font-medium text-blue-900 dark:text-blue-200">
+                                    {change.field}:
+                                  </p>
+                                  <p className="text-blue-800 dark:text-blue-300">
+                                    <span className="line-through">{change.oldValue}</span>
+                                    <span className="mx-1">→</span>
+                                    <span className="font-semibold">{change.newValue}</span>
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-slate-500 dark:text-slate-400">Initial creation</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 max-w-xs truncate">
+                          {entry.comments}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                          {entry.savedAt}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
