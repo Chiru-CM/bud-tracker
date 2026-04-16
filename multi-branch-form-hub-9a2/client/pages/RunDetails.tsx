@@ -405,13 +405,32 @@ export default function RunDetails() {
     setExpandedVersions(newExpanded);
   };
 
-  const getChangedFields = (currentIndex: number): Array<{ field: string; oldValue: string; newValue: string }> => {
-    if (currentIndex === 0) {
+  const getComputedValueDirection = (currentIndex: number, fieldName: keyof ComputedTemplateValues): "up" | "down" | "none" => {
+    if (currentIndex === history.length - 1) {
+      return "none";
+    }
+    const current = history[currentIndex];
+    const previous = history[currentIndex + 1];
+    if (!previous) {
+      return "none";
+    }
+
+    const currentVal = current.computed[fieldName];
+    const previousVal = previous.computed[fieldName];
+
+    return currentVal > previousVal ? "up" : currentVal < previousVal ? "down" : "none";
+  };
+
+  const getChangedFields = (currentIndex: number): Array<{ field: string; oldValue: string; newValue: string; direction: "up" | "down" | "none" }> => {
+    if (currentIndex === history.length - 1) {
       return [];
     }
     const current = history[currentIndex];
-    const previous = history[currentIndex - 1];
-    const changes: Array<{ field: string; oldValue: string; newValue: string }> = [];
+    const previous = history[currentIndex + 1];
+    if (!previous) {
+      return [];
+    }
+    const changes: Array<{ field: string; oldValue: string; newValue: string; direction: "up" | "down" | "none" }> = [];
 
     const fieldLabels: Record<string, string> = {
       tcCount: "TC Count",
@@ -445,10 +464,21 @@ export default function RunDetails() {
     Object.keys(fieldLabels).forEach((key) => {
       const typedKey = key as keyof BudgetTemplate;
       if (current.data[typedKey] !== previous.data[typedKey]) {
+        const oldVal = String(previous.data[typedKey]);
+        const newVal = String(current.data[typedKey]);
+        const oldNum = parseNumber(oldVal);
+        const newNum = parseNumber(newVal);
+        let direction: "up" | "down" | "none" = "none";
+
+        if (!isNaN(oldNum) && !isNaN(newNum)) {
+          direction = newNum > oldNum ? "up" : newNum < oldNum ? "down" : "none";
+        }
+
         changes.push({
           field: fieldLabels[key],
-          oldValue: String(previous.data[typedKey]),
-          newValue: String(current.data[typedKey]),
+          oldValue: oldVal,
+          newValue: newVal,
+          direction,
         });
       }
     });
@@ -501,7 +531,8 @@ export default function RunDetails() {
           <button
             type="button"
             onClick={addBudget}
-            className={`inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-5 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl`}
+            disabled={budgets.length > 0}
+            className={`inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-5 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg`}
           >
             <Plus className="h-4 w-4" />
             Add Budget
@@ -544,9 +575,18 @@ export default function RunDetails() {
                                 {entry.action}
                               </span>
                             </div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                              Total: {formatCurrency(entry.computed.totalBudget)}
-                            </p>
+                            {(() => {
+                              const totalDirection = getComputedValueDirection(index, "totalBudget");
+                              const totalColor =
+                                totalDirection === "up" ? "text-green-700 dark:text-green-400" :
+                                totalDirection === "down" ? "text-red-700 dark:text-red-400" :
+                                "text-slate-600 dark:text-slate-400";
+                              return (
+                                <p className={`text-sm font-semibold ${totalColor}`}>
+                                  Total: {formatCurrency(entry.computed.totalBudget)}
+                                </p>
+                              );
+                            })()}
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                               {entry.savedAt}
                             </p>
@@ -583,54 +623,27 @@ export default function RunDetails() {
                                   : "—"}
                               </p>
                             </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Duration (Days)</p>
-                              <p className="font-medium text-slate-900 dark:text-white">{entry.data.durationDays}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Progress</p>
-                              <p className="font-medium text-slate-900 dark:text-white capitalize">{entry.data.progress.replace("-", " ")}</p>
-                            </div>
                           </div>
 
                           {/* Computed Values */}
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs p-3 bg-slate-100 dark:bg-slate-700 rounded">
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Manual TC</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.manualTcCount)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Automation TC</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.automationTcCount)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Manual HC</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.manualHc)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Automation HC</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.automationHc)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Weeks</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.durationWeeks)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Lead Cost</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.leadCost)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">SQPM Cost</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.sqpmCost)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">PL Cost</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.plCost)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Lab Tech Cost</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.labTechCost)}</p>
-                            </div>
+                            {computedRows.map((row) => {
+                              const direction = getComputedValueDirection(history.indexOf(entry), row.name);
+                              const textColor =
+                                direction === "up" ? "text-green-700 dark:text-green-400" :
+                                direction === "down" ? "text-red-700 dark:text-red-400" :
+                                "text-slate-900 dark:text-white";
+                              return (
+                                <div key={row.name}>
+                                  <p className="text-slate-600 dark:text-slate-400">{row.label}</p>
+                                  <p className={`font-semibold ${textColor}`}>
+                                    {row.kind === "currency"
+                                      ? formatCurrency(entry.computed[row.name])
+                                      : formatNumber(entry.computed[row.name])}
+                                  </p>
+                                </div>
+                              );
+                            })}
                           </div>
 
                           {/* Comments */}
@@ -704,18 +717,19 @@ export default function RunDetails() {
                         <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
                           {changes.length > 0 ? (
                             <div className="space-y-1 max-h-16 overflow-y-auto">
-                              {changes.map((change, changeIndex) => (
-                                <div key={changeIndex} className="text-xs p-1 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-800">
-                                  <p className="font-medium text-blue-900 dark:text-blue-200">
-                                    {change.field}:
-                                  </p>
-                                  <p className="text-blue-800 dark:text-blue-300">
-                                    <span className="line-through">{change.oldValue}</span>
-                                    <span className="mx-1">→</span>
-                                    <span className="font-semibold">{change.newValue}</span>
-                                  </p>
-                                </div>
-                              ))}
+                              {changes.map((change, changeIndex) => {
+                                const textColor =
+                                  change.direction === "up" ? "text-green-700 dark:text-green-400" :
+                                  change.direction === "down" ? "text-red-700 dark:text-red-400" :
+                                  "";
+                                return (
+                                  <div key={changeIndex}>
+                                    <p className={`text-xs ${textColor}`}>
+                                      {change.field}: {change.oldValue} → {change.newValue}
+                                    </p>
+                                  </div>
+                                );
+                              })}
                             </div>
                           ) : (
                             <span className="text-slate-500 dark:text-slate-400">Initial creation</span>
