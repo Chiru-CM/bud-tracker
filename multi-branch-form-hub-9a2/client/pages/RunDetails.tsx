@@ -1,5 +1,5 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Edit3, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Plus, Edit3, Trash2, Save, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import {
   branchConfigs,
@@ -318,6 +318,7 @@ export default function RunDetails() {
   const [originalBudgetData, setOriginalBudgetData] = useState<BudgetTemplate | null>(null);
   const [runName, setRunName] = useState<string>(runId || "");
   const [comments, setComments] = useState<string>("");
+  const [expandedVersions, setExpandedVersions] = useState<Set<string>>(new Set());
 
   const handleBudgetFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -394,6 +395,16 @@ export default function RunDetails() {
     setBudgetIds((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const toggleVersionExpand = (versionId: string) => {
+    const newExpanded = new Set(expandedVersions);
+    if (newExpanded.has(versionId)) {
+      newExpanded.delete(versionId);
+    } else {
+      newExpanded.add(versionId);
+    }
+    setExpandedVersions(newExpanded);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
@@ -453,118 +464,139 @@ export default function RunDetails() {
               Budgets
             </h3>
             <div className="space-y-4">
-              {history.map((entry, index) => (
-                <div
-                  key={entry.id}
-                  className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800"
-                >
-                  <div className="flex flex-col gap-4">
-                    {/* Header */}
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-slate-900 dark:text-white">
-                            Budget Version {history.length - index}
-                          </h4>
-                          <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
-                            {entry.action}
-                          </span>
+              {history.map((entry, index) => {
+                const isExpanded = expandedVersions.has(entry.id);
+                return (
+                  <div
+                    key={entry.id}
+                    className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
+                  >
+                    {/* Collapsed Header */}
+                    <div className="p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex-1 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleVersionExpand(entry.id)}
+                            className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors flex-shrink-0"
+                          >
+                            <ChevronDown
+                              className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <h4 className="font-semibold text-slate-900 dark:text-white">
+                                Budget Version {history.length - index}
+                              </h4>
+                              <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                                {entry.action}
+                              </span>
+                            </div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                              Total: {formatCurrency(entry.computed.totalBudget)}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              {entry.savedAt}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Total: {formatCurrency(entry.computed.totalBudget)}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          {entry.savedAt}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => editBudget(budgets.findIndex((b) => JSON.stringify(b) === JSON.stringify(entry.data)))}
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                          Edit
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => editBudget(budgets.findIndex((b) => JSON.stringify(b) === JSON.stringify(entry.data)))}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                            Edit
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Details Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm border-t border-slate-200 dark:border-slate-700 pt-3">
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">TC Count</p>
-                        <p className="font-medium text-slate-900 dark:text-white">{entry.data.tcCount}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">Date Range</p>
-                        <p className="font-medium text-slate-900 dark:text-white">
-                          {entry.data.startDate && entry.data.endDate
-                            ? `${entry.data.startDate} to ${entry.data.endDate}`
-                            : "—"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">Duration (Days)</p>
-                        <p className="font-medium text-slate-900 dark:text-white">{entry.data.durationDays}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">Progress</p>
-                        <p className="font-medium text-slate-900 dark:text-white capitalize">{entry.data.progress.replace("-", " ")}</p>
-                      </div>
-                    </div>
+                    {/* Expanded Content */}
+                    {isExpanded && (
+                      <div className="border-t border-slate-200 dark:border-slate-700">
+                        <div className="p-4 space-y-4">
+                          {/* Details Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">TC Count</p>
+                              <p className="font-medium text-slate-900 dark:text-white">{entry.data.tcCount}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Date Range</p>
+                              <p className="font-medium text-slate-900 dark:text-white">
+                                {entry.data.startDate && entry.data.endDate
+                                  ? `${entry.data.startDate} to ${entry.data.endDate}`
+                                  : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Duration (Days)</p>
+                              <p className="font-medium text-slate-900 dark:text-white">{entry.data.durationDays}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Progress</p>
+                              <p className="font-medium text-slate-900 dark:text-white capitalize">{entry.data.progress.replace("-", " ")}</p>
+                            </div>
+                          </div>
 
-                    {/* Computed Values */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs p-3 bg-slate-100 dark:bg-slate-700 rounded">
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">Manual TC</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.manualTcCount)}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">Automation TC</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.automationTcCount)}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">Manual HC</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.manualHc)}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">Automation HC</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.automationHc)}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">Weeks</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.durationWeeks)}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">Lead Cost</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.leadCost)}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">SQPM Cost</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.sqpmCost)}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">PL Cost</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.plCost)}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-600 dark:text-slate-400">Lab Tech Cost</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.labTechCost)}</p>
-                      </div>
-                    </div>
+                          {/* Computed Values */}
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs p-3 bg-slate-100 dark:bg-slate-700 rounded">
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Manual TC</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.manualTcCount)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Automation TC</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.automationTcCount)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Manual HC</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.manualHc)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Automation HC</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.automationHc)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Weeks</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.durationWeeks)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Lead Cost</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.leadCost)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">SQPM Cost</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.sqpmCost)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">PL Cost</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.plCost)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Lab Tech Cost</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.labTechCost)}</p>
+                            </div>
+                          </div>
 
-                    {/* Comments */}
-                    {entry.comments && (
-                      <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
-                        <p className="text-sm text-amber-900 dark:text-amber-200">
-                          <span className="font-semibold">Comment: </span>
-                          {entry.comments}
-                        </p>
+                          {/* Comments */}
+                          {entry.comments && (
+                            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
+                              <p className="text-sm text-amber-900 dark:text-amber-200">
+                                <span className="font-semibold">Comment: </span>
+                                {entry.comments}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
