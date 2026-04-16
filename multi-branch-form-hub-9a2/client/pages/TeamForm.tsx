@@ -645,6 +645,28 @@ export default function TeamForm() {
     setTemplates((previousTemplates) => [...previousTemplates, newEntry]);
   };
 
+  const getLastBudgetForRun = (validationRunId: string): { budget: BudgetTemplate | null; computed: ComputedTemplateValues | null } => {
+    const run = validationRuns.find((r) => r.id === validationRunId);
+    if (!run || run.budgets.length === 0) {
+      return { budget: null, computed: null };
+    }
+    const lastBudget = run.budgets[run.budgets.length - 1];
+    const computed = calculateTemplateValues(lastBudget);
+    return { budget: lastBudget, computed };
+  };
+
+  const getTotalBudgetAllRuns = (): number => {
+    let total = 0;
+    validationRuns.forEach((run) => {
+      if (run.budgets.length > 0) {
+        const lastBudget = run.budgets[run.budgets.length - 1];
+        const computed = calculateTemplateValues(lastBudget);
+        total += computed.totalBudget;
+      }
+    });
+    return total;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
@@ -691,6 +713,18 @@ export default function TeamForm() {
           </button>
         </div>
 
+        {/* Summary Card */}
+        {validationRuns.length > 0 && (
+          <div className="mb-8 rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white p-6 dark:border-slate-700 dark:from-slate-800 dark:to-slate-900 shadow-lg">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400 mb-2">
+              Total Budget Across All Runs
+            </h3>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white">
+              {formatCurrency(getTotalBudgetAllRuns())}
+            </p>
+          </div>
+        )}
+
         <div className="space-y-8">
           {validationRuns.map((validationRun) => (
             <section
@@ -704,13 +738,25 @@ export default function TeamForm() {
                   onClick={() => navigate(`/${branch}/${category}/${teamPath}/${validationRun.name.replace(/\s+/g, '-')}`)}
                   className="flex flex-1 items-center justify-between gap-4 text-left rounded-lg p-2 -ml-2 -mr-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  <div>
+                  <div className="flex-1">
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                       {validationRun.name}
                     </h3>
                     <p className="text-sm text-slate-600 dark:text-slate-400">
                       Click to manage budgets
                     </p>
+                    {(() => {
+                      const { computed } = getLastBudgetForRun(validationRun.id);
+                      return computed ? (
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white mt-2">
+                          Last Budget: {formatCurrency(computed.totalBudget)}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                          No budget added yet
+                        </p>
+                      );
+                    })()}
                   </div>
                 </button>
 
