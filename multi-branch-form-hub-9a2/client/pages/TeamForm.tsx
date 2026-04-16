@@ -736,14 +736,6 @@ export default function TeamForm() {
                 </button>
 
                 <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                  <button
-                    type="button"
-                    onClick={() => addBudgetToRun(validationRun.id)}
-                    className={`inline-flex items-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-3 py-2 text-sm font-semibold text-white transition-colors hover:shadow-lg`}
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Budget
-                  </button>
                   {validationRuns.length > 1 && (
                     <button
                       type="button"
