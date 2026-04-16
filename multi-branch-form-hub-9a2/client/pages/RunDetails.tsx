@@ -587,14 +587,6 @@ export default function RunDetails() {
                                   : "—"}
                               </p>
                             </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Duration (Days)</p>
-                              <p className="font-medium text-slate-900 dark:text-white">{entry.data.durationDays}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Progress</p>
-                              <p className="font-medium text-slate-900 dark:text-white capitalize">{entry.data.progress.replace("-", " ")}</p>
-                            </div>
                           </div>
 
                           {/* Computed Values */}
