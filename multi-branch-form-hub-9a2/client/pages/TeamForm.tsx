@@ -90,9 +90,9 @@ type HistoryEntry = {
 type ChangeLog = {
   id: string;
   timestamp: string;
-  action: "created" | "edited" | "duplicated" | "deleted";
+  action: "created" | "edited" | "duplicated" | "deleted" | "run-created" | "run-deleted";
   runName: string;
-  budgetIndex: number;
+  budgetIndex?: number;
   fieldChanges?: Array<{
     fieldName: string;
     oldValue: string;
@@ -399,6 +399,18 @@ export default function TeamForm() {
     };
 
     setValidationRuns((previousRuns) => [...previousRuns, newRun]);
+
+    // Log run creation
+    setChangeLog((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date().toLocaleString(),
+        action: "run-created",
+        runName: validationRunInput,
+      },
+    ]);
+
     setIsValidationModalOpen(false);
     setValidationRunInput("");
   };
@@ -509,9 +521,24 @@ export default function TeamForm() {
   };
 
   const removeValidationRun = (validationRunId: string) => {
+    const runToRemove = validationRuns.find((r) => r.id === validationRunId);
+
     setValidationRuns((previousRuns) =>
       previousRuns.filter((run) => run.id !== validationRunId),
     );
+
+    // Log run deletion
+    if (runToRemove) {
+      setChangeLog((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          timestamp: new Date().toLocaleString(),
+          action: "run-deleted",
+          runName: runToRemove.name,
+        },
+      ]);
+    }
   };
 
   const duplicateBudget = (validationRunId: string, budgetIndex: number) => {
@@ -815,19 +842,21 @@ export default function TeamForm() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                          entry.action === "created" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
+                          entry.action === "created" || entry.action === "run-created" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
                           entry.action === "edited" ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" :
                           entry.action === "duplicated" ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" :
                           "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                         }`}>
-                          {entry.action.charAt(0).toUpperCase() + entry.action.slice(1)}
+                          {entry.action === "run-created" ? "Run Created" :
+                           entry.action === "run-deleted" ? "Run Deleted" :
+                           entry.action.charAt(0).toUpperCase() + entry.action.slice(1)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
                         {entry.runName}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
-                        {entry.budgetIndex + 1}
+                        {entry.budgetIndex !== undefined ? entry.budgetIndex + 1 : "—"}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         {entry.fieldChanges && entry.fieldChanges.length > 0 ? (
