@@ -599,42 +599,16 @@ export default function RunDetails() {
 
                           {/* Computed Values */}
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs p-3 bg-slate-100 dark:bg-slate-700 rounded">
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Manual TC</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.manualTcCount)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Automation TC</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.automationTcCount)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Manual HC</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.manualHc)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Automation HC</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.automationHc)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Weeks</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.durationWeeks)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Lead Cost</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.leadCost)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">SQPM Cost</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.sqpmCost)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">PL Cost</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.plCost)}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Lab Tech Cost</p>
-                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.labTechCost)}</p>
-                            </div>
+                            {computedRows.map((row) => (
+                              <div key={row.name}>
+                                <p className="text-slate-600 dark:text-slate-400">{row.label}</p>
+                                <p className="font-semibold text-slate-900 dark:text-white">
+                                  {row.kind === "currency"
+                                    ? formatCurrency(entry.computed[row.name])
+                                    : formatNumber(entry.computed[row.name])}
+                                </p>
+                              </div>
+                            ))}
                           </div>
 
                           {/* Comments */}
