@@ -1,10 +1,5 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  Plus,
-  Save,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, Plus, Edit3, Trash2, Save } from "lucide-react";
 import { useState } from "react";
 import {
   branchConfigs,
@@ -44,21 +39,6 @@ type BudgetTemplate = {
   projectManagerRate: string;
 };
 
-type ValidationRun = {
-  id: string;
-  name: string;
-  isExpanded: boolean;
-  budgets: BudgetTemplate[];
-};
-
-type TemplateEntry = {
-  id: string;
-  data: BudgetTemplate;
-  isExpanded: boolean;
-  isSaved: boolean;
-  historyId?: string;
-};
-
 type ComputedTemplateValues = {
   manualTcCount: number;
   automationTcCount: number;
@@ -85,19 +65,8 @@ type HistoryEntry = {
   data: BudgetTemplate;
   savedAt: string;
   computed: ComputedTemplateValues;
-};
-
-type ChangeLog = {
-  id: string;
-  timestamp: string;
-  action: "created" | "edited" | "duplicated" | "deleted";
-  runName: string;
-  budgetIndex: number;
-  fieldChanges?: Array<{
-    fieldName: string;
-    oldValue: string;
-    newValue: string;
-  }>;
+  comments: string;
+  action: "created" | "edited";
 };
 
 const createBudgetTemplate = (): BudgetTemplate => ({
@@ -128,13 +97,6 @@ const createBudgetTemplate = (): BudgetTemplate => ({
   asqpmRate: "130",
   labTechRate: "85",
   projectManagerRate: "140",
-});
-
-const createTemplateEntry = (): TemplateEntry => ({
-  id: crypto.randomUUID(),
-  data: createBudgetTemplate(),
-  isExpanded: true,
-  isSaved: false,
 });
 
 const progressOptions = [
@@ -324,174 +286,41 @@ const calculateTemplateValues = (template: BudgetTemplate): ComputedTemplateValu
   };
 };
 
-export default function TeamForm() {
-  const { teamPath, branch, category } = useParams<{
+export default function RunDetails() {
+  const { teamPath, branch, category, runId } = useParams<{
     teamPath: string;
     branch: string;
     category: string;
+    runId: string;
   }>();
   const navigate = useNavigate();
 
   const branchKey = branch && branch in branchConfigs ? (branch as BranchKey) : null;
-  const categoryKey =
-    category && category in categoryCards ? (category as CategoryKey) : null;
+  const categoryKey = category && category in categoryCards ? (category as CategoryKey) : null;
   const branchTitle = branchKey ? branchConfigs[branchKey].title : "";
   const accentColor = branchKey
     ? branchConfigs[branchKey].accentColor
     : "from-blue-500 to-cyan-500";
   const categoryLabel = categoryKey ? categoryCards[categoryKey].label : "";
-  const categoryIcon = categoryKey ? categoryCards[categoryKey].icon : "👥";
   const team = teamPath?.replace(/^team-/, "") ?? "";
   const teamName = formatTeamNameFromSlug(team);
   const backPath =
-    branch && category ? `/${branch}/${category}` : branch ? `/${branch}` : "/";
+    branch && category ? `/${branch}/${category}/${teamPath}` : `/`;
 
-  const [validationRuns, setValidationRuns] = useState<ValidationRun[]>([]);
+  const [budgets, setBudgets] = useState<BudgetTemplate[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [changeLog, setChangeLog] = useState<ChangeLog[]>([]);
-  const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
-  const [validationRunInput, setValidationRunInput] = useState("");
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
-  const [modalValidationRunId, setModalValidationRunId] = useState<string | null>(null);
-  const [modalBudgetIndex, setModalBudgetIndex] = useState<number | null>(null);
+  const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
+  const [budgetIndex, setBudgetIndex] = useState<number | null>(null);
   const [budgetFormData, setBudgetFormData] = useState<BudgetTemplate>(createBudgetTemplate());
   const [originalBudgetData, setOriginalBudgetData] = useState<BudgetTemplate | null>(null);
-
-  const handleInputChange = (
-    templateId: string,
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const { name, value } = e.target;
-    setTemplates((previousTemplates) =>
-      previousTemplates.map((template) => {
-        if (template.id !== templateId) return template;
-
-        const updatedData = { ...template.data, [name as keyof BudgetTemplate]: value };
-
-        // Auto-calculate duration in days when start or end date changes
-        if ((name === "startDate" || name === "endDate") && updatedData.startDate && updatedData.endDate) {
-          const calculatedDays = getBusinessDaysInclusive(updatedData.startDate, updatedData.endDate);
-          updatedData.durationDays = calculatedDays > 0 ? String(calculatedDays) : "";
-        }
-
-        return {
-          ...template,
-          data: updatedData,
-          isSaved: false,
-        };
-      }),
-    );
-  };
-
-  const addValidationRun = () => {
-    setValidationRunInput("");
-    setIsValidationModalOpen(true);
-  };
-
-  const saveValidationRun = () => {
-    if (validationRunInput.trim() === "") return;
-
-    const newRun: ValidationRun = {
-      id: crypto.randomUUID(),
-      name: validationRunInput,
-      isExpanded: true,
-      budgets: [],
-    };
-
-    setValidationRuns((previousRuns) => [...previousRuns, newRun]);
-    setIsValidationModalOpen(false);
-    setValidationRunInput("");
-  };
-
-  const addBudgetToRun = (validationRunId: string) => {
-    setBudgetFormData(createBudgetTemplate());
-    setOriginalBudgetData(null);
-    setModalValidationRunId(validationRunId);
-    setModalBudgetIndex(null); // For new budget
-    setIsBudgetModalOpen(true);
-  };
-
-  const openBudgetFormModal = (validationRunId: string, budgetIndex: number) => {
-    const run = validationRuns.find((r) => r.id === validationRunId);
-    if (run && run.budgets[budgetIndex]) {
-      setBudgetFormData(run.budgets[budgetIndex]);
-      setOriginalBudgetData(run.budgets[budgetIndex]);
-      setModalValidationRunId(validationRunId);
-      setModalBudgetIndex(budgetIndex);
-      setIsBudgetModalOpen(true);
-    }
-  };
-
-  const saveBudgetToRun = () => {
-    if (!modalValidationRunId) return;
-
-    setValidationRuns((previousRuns) =>
-      previousRuns.map((run) => {
-        if (run.id !== modalValidationRunId) return run;
-
-        const newBudgets = [...run.budgets];
-        const isNewBudget = modalBudgetIndex === null;
-        const budgetIndex = isNewBudget ? newBudgets.length : modalBudgetIndex;
-
-        if (modalBudgetIndex !== null) {
-          newBudgets[modalBudgetIndex] = budgetFormData;
-        } else {
-          newBudgets.push(budgetFormData);
-        }
-
-        // Track changes
-        if (isNewBudget) {
-          setChangeLog((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              timestamp: new Date().toLocaleString(),
-              action: "created",
-              runName: run.name,
-              budgetIndex: budgetIndex,
-            },
-          ]);
-        } else if (originalBudgetData) {
-          const fieldChanges = [];
-          for (const key in originalBudgetData) {
-            if (originalBudgetData[key as keyof BudgetTemplate] !== budgetFormData[key as keyof BudgetTemplate]) {
-              fieldChanges.push({
-                fieldName: key,
-                oldValue: String(originalBudgetData[key as keyof BudgetTemplate]),
-                newValue: String(budgetFormData[key as keyof BudgetTemplate]),
-              });
-            }
-          }
-          if (fieldChanges.length > 0) {
-            setChangeLog((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                timestamp: new Date().toLocaleString(),
-                action: "edited",
-                runName: run.name,
-                budgetIndex: budgetIndex,
-                fieldChanges,
-              },
-            ]);
-          }
-        }
-
-        return { ...run, budgets: newBudgets };
-      }),
-    );
-    setIsBudgetModalOpen(false);
-    setModalValidationRunId(null);
-    setModalBudgetIndex(null);
-    setBudgetFormData(createBudgetTemplate());
-    setOriginalBudgetData(null);
-  };
+  const [runName, setRunName] = useState<string>(runId || "");
+  const [comments, setComments] = useState<string>("");
 
   const handleBudgetFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setBudgetFormData((previous) => {
       const updated = { ...previous, [name]: value };
-      // Auto-calculate duration in days when start or end date changes
       if ((name === "startDate" || name === "endDate") && updated.startDate && updated.endDate) {
         const calculatedDays = getBusinessDaysInclusive(updated.startDate, updated.endDate);
         updated.durationDays = calculatedDays > 0 ? String(calculatedDays) : "";
@@ -500,149 +329,60 @@ export default function TeamForm() {
     });
   };
 
-  const toggleValidationRun = (validationRunId: string) => {
-    setValidationRuns((previousRuns) =>
-      previousRuns.map((run) =>
-        run.id === validationRunId ? { ...run, isExpanded: !run.isExpanded } : run,
-      ),
-    );
+  const addBudget = () => {
+    setBudgetFormData(createBudgetTemplate());
+    setOriginalBudgetData(null);
+    setBudgetIndex(null);
+    setIsBudgetModalOpen(true);
   };
 
-  const removeValidationRun = (validationRunId: string) => {
-    setValidationRuns((previousRuns) =>
-      previousRuns.filter((run) => run.id !== validationRunId),
-    );
+  const editBudget = (index: number) => {
+    setBudgetFormData(budgets[index]);
+    setOriginalBudgetData(budgets[index]);
+    setBudgetIndex(index);
+    setIsBudgetModalOpen(true);
   };
 
-  const duplicateBudget = (validationRunId: string, budgetIndex: number) => {
-    setValidationRuns((previousRuns) =>
-      previousRuns.map((run) => {
-        if (run.id !== validationRunId) return run;
-
-        const budgetToDuplicate = run.budgets[budgetIndex];
-        if (!budgetToDuplicate) return run;
-
-        return {
-          ...run,
-          budgets: [...run.budgets, { ...budgetToDuplicate }],
-        };
-      }),
-    );
+  const saveBudget = () => {
+    setComments("");
+    setIsCommentsModalOpen(true);
   };
 
-  const removeBudget = (validationRunId: string, budgetIndex: number) => {
-    const run = validationRuns.find((r) => r.id === validationRunId);
-    if (run) {
-      setChangeLog((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          timestamp: new Date().toLocaleString(),
-          action: "deleted",
-          runName: run.name,
-          budgetIndex: budgetIndex,
-        },
-      ]);
+  const saveWithComments = () => {
+    if (comments.trim() === "") return;
+
+    const newBudgets = [...budgets];
+    const isNewBudget = budgetIndex === null;
+
+    if (budgetIndex !== null) {
+      newBudgets[budgetIndex] = budgetFormData;
+    } else {
+      newBudgets.push(budgetFormData);
     }
 
-    setValidationRuns((previousRuns) =>
-      previousRuns.map((run) => {
-        if (run.id !== validationRunId) return run;
+    setBudgets(newBudgets);
 
-        return {
-          ...run,
-          budgets: run.budgets.filter((_, i) => i !== budgetIndex),
-        };
-      }),
-    );
-  };
-
-  const removeTemplate = (templateId: string) => {
-    setTemplates((previousTemplates) =>
-      previousTemplates.length === 1
-        ? previousTemplates
-        : previousTemplates.filter((template) => template.id !== templateId),
-    );
-  };
-
-  const saveTemplate = (templateId: string) => {
-    setTemplates((previousTemplates) =>
-      previousTemplates.map((template) => {
-        if (template.id === templateId) {
-          const computed = calculateTemplateValues(template.data);
-
-          if (template.historyId) {
-            // Update existing history entry
-            setHistory((previousHistory) =>
-              previousHistory.map((entry) =>
-                entry.id === template.historyId
-                  ? {
-                      ...entry,
-                      data: { ...template.data },
-                      computed,
-                      savedAt: new Date().toLocaleString(),
-                    }
-                  : entry,
-              ),
-            );
-          } else {
-            // Create new history entry
-            const newHistoryId = crypto.randomUUID();
-            setHistory((previousHistory) => [
-              ...previousHistory,
-              {
-                id: newHistoryId,
-                data: { ...template.data },
-                savedAt: new Date().toLocaleString(),
-                computed,
-              },
-            ]);
-            return { ...template, isSaved: true, isExpanded: false, historyId: newHistoryId };
-          }
-
-          return { ...template, isSaved: true, isExpanded: false };
-        }
-        return template;
-      }),
-    );
-  };
-
-  const toggleTemplate = (templateId: string) => {
-    setTemplates((previousTemplates) =>
-      previousTemplates.map((template) =>
-        template.id === templateId
-          ? { ...template, isExpanded: !template.isExpanded }
-          : template,
-      ),
-    );
-  };
-
-  const duplicateTemplate = (templateId: string) => {
-    setTemplates((previousTemplates) => {
-      const templateToDuplicate = previousTemplates.find((t) => t.id === templateId);
-      if (!templateToDuplicate) return previousTemplates;
-
-      const newEntry: TemplateEntry = {
-        id: crypto.randomUUID(),
-        data: { ...templateToDuplicate.data },
-        isExpanded: true,
-        isSaved: false,
-        // Don't copy historyId - this creates a new entry
-      };
-
-      return [...previousTemplates, newEntry];
-    });
-  };
-
-  const editFromHistory = (historyEntry: HistoryEntry) => {
-    const newEntry: TemplateEntry = {
+    const computed = calculateTemplateValues(budgetFormData);
+    const newHistoryEntry: HistoryEntry = {
       id: crypto.randomUUID(),
-      data: { ...historyEntry.data },
-      isExpanded: true,
-      isSaved: false,
+      data: budgetFormData,
+      savedAt: new Date().toLocaleString(),
+      computed,
+      comments,
+      action: budgetIndex !== null ? "edited" : "created",
     };
 
-    setTemplates((previousTemplates) => [...previousTemplates, newEntry]);
+    setHistory((prev) => [newHistoryEntry, ...prev]);
+    setIsBudgetModalOpen(false);
+    setIsCommentsModalOpen(false);
+    setBudgetIndex(null);
+    setBudgetFormData(createBudgetTemplate());
+    setOriginalBudgetData(null);
+    setComments("");
+  };
+
+  const removeBudget = (index: number) => {
+    setBudgets((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -677,144 +417,87 @@ export default function TeamForm() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-10">
           <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-            {teamName} - Budget Allocation
+            {runName}
           </h2>
+          <p className="text-slate-600 dark:text-slate-400">
+            Manage budgets for this validation run
+          </p>
+        </div>
+
+        <div className="mb-8">
           <button
             type="button"
-            onClick={addValidationRun}
+            onClick={addBudget}
             className={`inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-5 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl`}
           >
             <Plus className="h-4 w-4" />
-            Add run
+            Add Budget
           </button>
         </div>
 
-        <div className="space-y-8">
-          {validationRuns.map((validationRun) => (
-            <section
-              key={validationRun.id}
-              className="overflow-hidden rounded-2xl border-2 border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900 transition-all"
-            >
-              {/* Validation Run Header */}
-              <div className="flex flex-col gap-4 border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/${branch}/${category}/${teamPath}/${validationRun.name.replace(/\s+/g, '-')}`)}
-                  className="flex flex-1 items-center justify-between gap-4 text-left rounded-lg p-2 -ml-2 -mr-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                >
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                      {validationRun.name}
-                    </h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      Click to manage budgets
-                    </p>
+        {/* Budgets List */}
+        {budgets.length > 0 && (
+          <div className="mb-12">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+              Budgets
+            </h3>
+            <div className="space-y-4">
+              {budgets.map((budget, index) => {
+                const computed = calculateTemplateValues(budget);
+                return (
+                  <div
+                    key={index}
+                    className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h4 className="font-semibold text-slate-900 dark:text-white">
+                          Budget {index + 1}
+                        </h4>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                          Total: {formatCurrency(computed.totalBudget)}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => editBudget(index)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeBudget(index)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-white hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Remove
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </button>
-
-                <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                  {validationRuns.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeValidationRun(validationRun.id)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Remove
-                    </button>
-                  )}
-                </div>
-              </div>
-
-            </section>
-          ))}
-        </div>
-
-        {changeLog.length > 0 && (
-          <div className="mt-16">
-            <h2 className="mb-6 text-2xl font-bold text-slate-900 dark:text-white">
-              Change History
-            </h2>
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800">
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Time
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Action
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Run Name
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Budget #
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Changes
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {[...changeLog].reverse().map((entry) => (
-                    <tr
-                      key={entry.id}
-                      className="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800"
-                    >
-                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
-                        {entry.timestamp}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                          entry.action === "created" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
-                          entry.action === "edited" ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" :
-                          entry.action === "duplicated" ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" :
-                          "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                        }`}>
-                          {entry.action.charAt(0).toUpperCase() + entry.action.slice(1)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
-                        {entry.runName}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
-                        {entry.budgetIndex + 1}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        {entry.fieldChanges && entry.fieldChanges.length > 0 ? (
-                          <div className="space-y-1">
-                            {entry.fieldChanges.map((change, idx) => (
-                              <div key={idx} className="text-slate-700 dark:text-slate-300">
-                                <span className="font-medium">{change.fieldName}:</span> {change.oldValue} → {change.newValue}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-slate-500 dark:text-slate-400">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                );
+              })}
             </div>
           </div>
         )}
 
+        {/* History Table */}
         {history.length > 0 && (
-          <div className="mt-16">
-            <h2 className="mb-6 text-2xl font-bold text-slate-900 dark:text-white">
-              Allocation History
-            </h2>
+          <div className="mb-12">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+              Budget History
+            </h3>
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800">
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
-                      Validation Run Name
+                      Budget #
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
                       Date Range
@@ -828,13 +511,13 @@ export default function TeamForm() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {history.map((entry) => (
+                  {history.map((entry, index) => (
                     <tr
                       key={entry.id}
                       className="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800"
                     >
                       <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
-                        {entry.data.validationRunName || "—"}
+                        Budget {index + 1}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
                         {entry.data.startDate && entry.data.endDate
@@ -856,73 +539,19 @@ export default function TeamForm() {
         )}
       </div>
 
-      {/* Validation Run Name Modal */}
-      {isValidationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 shadow-2xl">
-            <div className="border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Add Run
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsValidationModalOpen(false)}
-                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-6">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Validation run name
-              </label>
-              <input
-                type="text"
-                value={validationRunInput}
-                onChange={(e) => setValidationRunInput(e.target.value)}
-                placeholder="Enter validation run name"
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-              />
-            </div>
-
-            <div className="border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-800 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsValidationModalOpen(false)}
-                className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-6 py-2 font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-              >
-                Cancel
-              </button>
-              {validationRunInput.trim() !== "" && (
-                <button
-                  type="button"
-                  onClick={saveValidationRun}
-                  className={`inline-flex items-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-6 py-2 font-semibold text-white transition-all hover:shadow-lg`}
-                >
-                  <Save className="h-4 w-4" />
-                  Save
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Budget Details Modal */}
-      {isBudgetModalOpen && modalValidationRunId && (
+      {/* Budget Modal */}
+      {isBudgetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 shadow-2xl">
             <div className="sticky top-0 border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                {modalBudgetIndex !== null ? "Edit Budget" : "Add Budget Details"}
+                {budgetIndex !== null ? "Edit Budget" : "Add Budget Details"}
               </h2>
               <button
                 type="button"
                 onClick={() => {
                   setIsBudgetModalOpen(false);
-                  setModalValidationRunId(null);
-                  setModalBudgetIndex(null);
+                  setBudgetIndex(null);
                   setBudgetFormData(createBudgetTemplate());
                   setOriginalBudgetData(null);
                 }}
@@ -1037,8 +666,7 @@ export default function TeamForm() {
                 type="button"
                 onClick={() => {
                   setIsBudgetModalOpen(false);
-                  setModalValidationRunId(null);
-                  setModalBudgetIndex(null);
+                  setBudgetIndex(null);
                   setBudgetFormData(createBudgetTemplate());
                   setOriginalBudgetData(null);
                 }}
@@ -1048,7 +676,7 @@ export default function TeamForm() {
               </button>
               <button
                 type="button"
-                onClick={saveBudgetToRun}
+                onClick={saveBudget}
                 className={`inline-flex items-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-6 py-2 font-semibold text-white transition-all hover:shadow-lg`}
               >
                 <Save className="h-4 w-4" />
