@@ -575,9 +575,18 @@ export default function RunDetails() {
                                 {entry.action}
                               </span>
                             </div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                              Total: {formatCurrency(entry.computed.totalBudget)}
-                            </p>
+                            {(() => {
+                              const totalDirection = getComputedValueDirection(index, "totalBudget");
+                              const totalColor =
+                                totalDirection === "up" ? "text-green-700 dark:text-green-400" :
+                                totalDirection === "down" ? "text-red-700 dark:text-red-400" :
+                                "text-slate-600 dark:text-slate-400";
+                              return (
+                                <p className={`text-sm font-semibold ${totalColor}`}>
+                                  Total: {formatCurrency(entry.computed.totalBudget)}
+                                </p>
+                              );
+                            })()}
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                               {entry.savedAt}
                             </p>
