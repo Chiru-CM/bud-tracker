@@ -405,7 +405,7 @@ export default function RunDetails() {
     setExpandedVersions(newExpanded);
   };
 
-  const getChangedFields = (currentIndex: number): Array<{ field: string; oldValue: string; newValue: string }> => {
+  const getChangedFields = (currentIndex: number): Array<{ field: string; oldValue: string; newValue: string; direction: "up" | "down" | "none" }> => {
     if (currentIndex === history.length - 1) {
       return [];
     }
@@ -414,7 +414,7 @@ export default function RunDetails() {
     if (!previous) {
       return [];
     }
-    const changes: Array<{ field: string; oldValue: string; newValue: string }> = [];
+    const changes: Array<{ field: string; oldValue: string; newValue: string; direction: "up" | "down" | "none" }> = [];
 
     const fieldLabels: Record<string, string> = {
       tcCount: "TC Count",
@@ -448,10 +448,21 @@ export default function RunDetails() {
     Object.keys(fieldLabels).forEach((key) => {
       const typedKey = key as keyof BudgetTemplate;
       if (current.data[typedKey] !== previous.data[typedKey]) {
+        const oldVal = String(previous.data[typedKey]);
+        const newVal = String(current.data[typedKey]);
+        const oldNum = parseNumber(oldVal);
+        const newNum = parseNumber(newVal);
+        let direction: "up" | "down" | "none" = "none";
+
+        if (!isNaN(oldNum) && !isNaN(newNum)) {
+          direction = newNum > oldNum ? "up" : newNum < oldNum ? "down" : "none";
+        }
+
         changes.push({
           field: fieldLabels[key],
-          oldValue: String(previous.data[typedKey]),
-          newValue: String(current.data[typedKey]),
+          oldValue: oldVal,
+          newValue: newVal,
+          direction,
         });
       }
     });
@@ -674,13 +685,19 @@ export default function RunDetails() {
                         <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
                           {changes.length > 0 ? (
                             <div className="space-y-1 max-h-16 overflow-y-auto">
-                              {changes.map((change, changeIndex) => (
-                                <div key={changeIndex}>
-                                  <p className="text-xs">
-                                    {change.field}: {change.oldValue} → {change.newValue}
-                                  </p>
-                                </div>
-                              ))}
+                              {changes.map((change, changeIndex) => {
+                                const textColor =
+                                  change.direction === "up" ? "text-green-700 dark:text-green-400" :
+                                  change.direction === "down" ? "text-red-700 dark:text-red-400" :
+                                  "";
+                                return (
+                                  <div key={changeIndex}>
+                                    <p className={`text-xs ${textColor}`}>
+                                      {change.field}: {change.oldValue} → {change.newValue}
+                                    </p>
+                                  </div>
+                                );
+                              })}
                             </div>
                           ) : (
                             <span className="text-slate-500 dark:text-slate-400">Initial creation</span>
