@@ -406,11 +406,14 @@ export default function RunDetails() {
   };
 
   const getChangedFields = (currentIndex: number): Array<{ field: string; oldValue: string; newValue: string }> => {
-    if (currentIndex === 0) {
+    if (currentIndex === history.length - 1) {
       return [];
     }
     const current = history[currentIndex];
-    const previous = history[currentIndex - 1];
+    const previous = history[currentIndex + 1];
+    if (!previous) {
+      return [];
+    }
     const changes: Array<{ field: string; oldValue: string; newValue: string }> = [];
 
     const fieldLabels: Record<string, string> = {
@@ -501,7 +504,8 @@ export default function RunDetails() {
           <button
             type="button"
             onClick={addBudget}
-            className={`inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-5 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl`}
+            disabled={budgets.length > 0}
+            className={`inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-5 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg`}
           >
             <Plus className="h-4 w-4" />
             Add Budget
@@ -705,14 +709,9 @@ export default function RunDetails() {
                           {changes.length > 0 ? (
                             <div className="space-y-1 max-h-16 overflow-y-auto">
                               {changes.map((change, changeIndex) => (
-                                <div key={changeIndex} className="text-xs p-1 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-800">
-                                  <p className="font-medium text-blue-900 dark:text-blue-200">
-                                    {change.field}:
-                                  </p>
-                                  <p className="text-blue-800 dark:text-blue-300">
-                                    <span className="line-through">{change.oldValue}</span>
-                                    <span className="mx-1">→</span>
-                                    <span className="font-semibold">{change.newValue}</span>
+                                <div key={changeIndex}>
+                                  <p className="text-xs">
+                                    {change.field}: {change.oldValue} → {change.newValue}
                                   </p>
                                 </div>
                               ))}
