@@ -1,5 +1,5 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Edit3, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Plus, Edit3, Trash2, Save, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import {
   branchConfigs,
@@ -67,6 +67,7 @@ type HistoryEntry = {
   computed: ComputedTemplateValues;
   comments: string;
   action: "created" | "edited";
+  budgetId: string;
 };
 
 const createBudgetTemplate = (): BudgetTemplate => ({
@@ -308,6 +309,7 @@ export default function RunDetails() {
     branch && category ? `/${branch}/${category}/${teamPath}` : `/`;
 
   const [budgets, setBudgets] = useState<BudgetTemplate[]>([]);
+  const [budgetIds, setBudgetIds] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
@@ -316,6 +318,7 @@ export default function RunDetails() {
   const [originalBudgetData, setOriginalBudgetData] = useState<BudgetTemplate | null>(null);
   const [runName, setRunName] = useState<string>(runId || "");
   const [comments, setComments] = useState<string>("");
+  const [expandedBudgets, setExpandedBudgets] = useState<Set<number>>(new Set());
 
   const handleBudgetFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -352,15 +355,20 @@ export default function RunDetails() {
     if (comments.trim() === "") return;
 
     const newBudgets = [...budgets];
-    const isNewBudget = budgetIndex === null;
+    const newBudgetIds = [...budgetIds];
+    let currentBudgetId: string;
 
     if (budgetIndex !== null) {
       newBudgets[budgetIndex] = budgetFormData;
+      currentBudgetId = newBudgetIds[budgetIndex];
     } else {
       newBudgets.push(budgetFormData);
+      currentBudgetId = crypto.randomUUID();
+      newBudgetIds.push(currentBudgetId);
     }
 
     setBudgets(newBudgets);
+    setBudgetIds(newBudgetIds);
 
     const computed = calculateTemplateValues(budgetFormData);
     const newHistoryEntry: HistoryEntry = {
@@ -370,6 +378,7 @@ export default function RunDetails() {
       computed,
       comments,
       action: budgetIndex !== null ? "edited" : "created",
+      budgetId: currentBudgetId,
     };
 
     setHistory((prev) => [newHistoryEntry, ...prev]);
@@ -383,6 +392,22 @@ export default function RunDetails() {
 
   const removeBudget = (index: number) => {
     setBudgets((prev) => prev.filter((_, i) => i !== index));
+    setBudgetIds((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleBudgetExpand = (index: number) => {
+    const newExpanded = new Set(expandedBudgets);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedBudgets(newExpanded);
+  };
+
+  const getBudgetVersions = (index: number) => {
+    const budgetId = budgetIds[index];
+    return history.filter((entry) => entry.budgetId === budgetId);
   };
 
   return (
@@ -447,39 +472,151 @@ export default function RunDetails() {
               {[...budgets].reverse().map((budget, index) => {
                 const actualIndex = budgets.length - 1 - index;
                 const computed = calculateTemplateValues(budget);
+                const versions = getBudgetVersions(actualIndex);
+                const isExpanded = expandedBudgets.has(actualIndex);
                 return (
                   <div
                     key={actualIndex}
-                    className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800"
+                    className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
                   >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <h4 className="font-semibold text-slate-900 dark:text-white">
-                          Budget {actualIndex + 1}
-                        </h4>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Total: {formatCurrency(computed.totalBudget)}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => editBudget(actualIndex)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeBudget(actualIndex)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-white hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Remove
-                        </button>
+                    {/* Summary Header */}
+                    <div className="p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleBudgetExpand(actualIndex)}
+                              className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+                            >
+                              <ChevronDown
+                                className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                              />
+                            </button>
+                            <div>
+                              <h4 className="font-semibold text-slate-900 dark:text-white">
+                                Budget {actualIndex + 1}
+                              </h4>
+                              <p className="text-sm text-slate-600 dark:text-slate-400">
+                                Total: {formatCurrency(computed.totalBudget)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => editBudget(actualIndex)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeBudget(actualIndex)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-white hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Remove
+                          </button>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Expanded Content */}
+                    {isExpanded && (
+                      <div className="border-t border-slate-200 dark:border-slate-700">
+                        {/* Versions List */}
+                        {versions.length > 0 && (
+                          <div className="p-4 space-y-6">
+                            {versions.map((version, versionIndex) => (
+                              <div key={version.id} className="border-l-4 border-blue-400 pl-4 py-2">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                      Version {versions.length - versionIndex}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                      {version.savedAt}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                                      {version.action}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Budget Details */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-3">
+                                  <div>
+                                    <p className="text-slate-600 dark:text-slate-400">TC Count</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">{version.data.tcCount}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-600 dark:text-slate-400">Date Range</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">
+                                      {version.data.startDate && version.data.endDate
+                                        ? `${version.data.startDate} to ${version.data.endDate}`
+                                        : "—"}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-600 dark:text-slate-400">Duration (Days)</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">{version.data.durationDays}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-600 dark:text-slate-400">Total Budget</p>
+                                    <p className="font-semibold text-slate-900 dark:text-white">
+                                      {formatCurrency(version.computed.totalBudget)}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Computed Values Grid */}
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs mb-3 p-2 bg-slate-100 dark:bg-slate-700 rounded">
+                                  <div>
+                                    <p className="text-slate-600 dark:text-slate-400">Manual TC</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">{formatNumber(version.computed.manualTcCount)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-600 dark:text-slate-400">Automation TC</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">{formatNumber(version.computed.automationTcCount)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-600 dark:text-slate-400">Manual HC</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">{formatNumber(version.computed.manualHc)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-600 dark:text-slate-400">Automation HC</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">{formatNumber(version.computed.automationHc)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-600 dark:text-slate-400">Weeks</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">{formatNumber(version.computed.durationWeeks)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-600 dark:text-slate-400">Lead Cost</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">{formatCurrency(version.computed.leadCost)}</p>
+                                  </div>
+                                </div>
+
+                                {/* Comments */}
+                                {version.comments && (
+                                  <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
+                                    <p className="text-xs text-amber-900 dark:text-amber-200">
+                                      <span className="font-semibold">Comment: </span>
+                                      {version.comments}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
