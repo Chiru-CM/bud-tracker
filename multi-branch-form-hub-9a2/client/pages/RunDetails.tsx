@@ -1,5 +1,5 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Edit3, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Plus, Edit3, Trash2, Save, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import {
   branchConfigs,
@@ -67,6 +67,7 @@ type HistoryEntry = {
   computed: ComputedTemplateValues;
   comments: string;
   action: "created" | "edited";
+  budgetId: string;
 };
 
 const createBudgetTemplate = (): BudgetTemplate => ({
@@ -308,6 +309,7 @@ export default function RunDetails() {
     branch && category ? `/${branch}/${category}/${teamPath}` : `/`;
 
   const [budgets, setBudgets] = useState<BudgetTemplate[]>([]);
+  const [budgetIds, setBudgetIds] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
@@ -316,6 +318,7 @@ export default function RunDetails() {
   const [originalBudgetData, setOriginalBudgetData] = useState<BudgetTemplate | null>(null);
   const [runName, setRunName] = useState<string>(runId || "");
   const [comments, setComments] = useState<string>("");
+  const [expandedVersions, setExpandedVersions] = useState<Set<string>>(new Set());
 
   const handleBudgetFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -352,15 +355,20 @@ export default function RunDetails() {
     if (comments.trim() === "") return;
 
     const newBudgets = [...budgets];
-    const isNewBudget = budgetIndex === null;
+    const newBudgetIds = [...budgetIds];
+    let currentBudgetId: string;
 
     if (budgetIndex !== null) {
       newBudgets[budgetIndex] = budgetFormData;
+      currentBudgetId = newBudgetIds[budgetIndex];
     } else {
       newBudgets.push(budgetFormData);
+      currentBudgetId = crypto.randomUUID();
+      newBudgetIds.push(currentBudgetId);
     }
 
     setBudgets(newBudgets);
+    setBudgetIds(newBudgetIds);
 
     const computed = calculateTemplateValues(budgetFormData);
     const newHistoryEntry: HistoryEntry = {
@@ -370,6 +378,7 @@ export default function RunDetails() {
       computed,
       comments,
       action: budgetIndex !== null ? "edited" : "created",
+      budgetId: currentBudgetId,
     };
 
     setHistory((prev) => [newHistoryEntry, ...prev]);
@@ -383,6 +392,68 @@ export default function RunDetails() {
 
   const removeBudget = (index: number) => {
     setBudgets((prev) => prev.filter((_, i) => i !== index));
+    setBudgetIds((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleVersionExpand = (versionId: string) => {
+    const newExpanded = new Set(expandedVersions);
+    if (newExpanded.has(versionId)) {
+      newExpanded.delete(versionId);
+    } else {
+      newExpanded.add(versionId);
+    }
+    setExpandedVersions(newExpanded);
+  };
+
+  const getChangedFields = (currentIndex: number): Array<{ field: string; oldValue: string; newValue: string }> => {
+    if (currentIndex === 0) {
+      return [];
+    }
+    const current = history[currentIndex];
+    const previous = history[currentIndex - 1];
+    const changes: Array<{ field: string; oldValue: string; newValue: string }> = [];
+
+    const fieldLabels: Record<string, string> = {
+      tcCount: "TC Count",
+      startDate: "Start Date",
+      endDate: "End Date",
+      durationDays: "Duration (Days)",
+      progress: "Progress",
+      manualTcFactor: "Manual TC Factor",
+      automationTcFactor: "Automation TC Factor",
+      adhocRequestFactor: "Adhoc Request Factor",
+      durationWeekFactor: "Duration Week Factor",
+      manualHcDivisor: "Manual HC Divisor",
+      automationHcDivisor: "Automation HC Divisor",
+      sqpmFactor: "SQPM Factor",
+      plFactor: "PL Factor",
+      perWqeFactor: "Per WQE Factor",
+      asqpmFactor: "aSQPM Factor",
+      labTechFactor: "Lab Tech Factor",
+      projectManagerFactor: "Project Manager Factor",
+      manualHcRate: "Manual HC Rate",
+      automationHcRate: "Automation HC Rate",
+      leadRate: "Lead Rate",
+      sqpmRate: "SQPM Rate",
+      plRate: "PL Rate",
+      perWqeRate: "Per WQE Rate",
+      asqpmRate: "aSQPM Rate",
+      labTechRate: "Lab Tech Rate",
+      projectManagerRate: "Project Manager Rate",
+    };
+
+    Object.keys(fieldLabels).forEach((key) => {
+      const typedKey = key as keyof BudgetTemplate;
+      if (current.data[typedKey] !== previous.data[typedKey]) {
+        changes.push({
+          field: fieldLabels[key],
+          oldValue: String(previous.data[typedKey]),
+          newValue: String(current.data[typedKey]),
+        });
+      }
+    });
+
+    return changes;
   };
 
   return (
@@ -438,47 +509,142 @@ export default function RunDetails() {
         </div>
 
         {/* Budgets List */}
-        {budgets.length > 0 && (
+        {history.length > 0 && (
           <div className="mb-12">
             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
               Budgets
             </h3>
             <div className="space-y-4">
-              {budgets.map((budget, index) => {
-                const computed = calculateTemplateValues(budget);
+              {history.map((entry, index) => {
+                const isExpanded = expandedVersions.has(entry.id);
                 return (
                   <div
-                    key={index}
-                    className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800"
+                    key={entry.id}
+                    className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
                   >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <h4 className="font-semibold text-slate-900 dark:text-white">
-                          Budget {index + 1}
-                        </h4>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Total: {formatCurrency(computed.totalBudget)}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => editBudget(index)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeBudget(index)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-white hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Remove
-                        </button>
+                    {/* Collapsed Header */}
+                    <div className="p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex-1 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleVersionExpand(entry.id)}
+                            className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors flex-shrink-0"
+                          >
+                            <ChevronDown
+                              className={`h-5 w-5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <h4 className="font-semibold text-slate-900 dark:text-white">
+                                Budget Version {history.length - index}
+                              </h4>
+                              <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                                {entry.action}
+                              </span>
+                            </div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                              Total: {formatCurrency(entry.computed.totalBudget)}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              {entry.savedAt}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => editBudget(budgets.findIndex((b) => JSON.stringify(b) === JSON.stringify(entry.data)))}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                            Edit
+                          </button>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Expanded Content */}
+                    {isExpanded && (
+                      <div className="border-t border-slate-200 dark:border-slate-700">
+                        <div className="p-4 space-y-4">
+                          {/* Details Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">TC Count</p>
+                              <p className="font-medium text-slate-900 dark:text-white">{entry.data.tcCount}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Date Range</p>
+                              <p className="font-medium text-slate-900 dark:text-white">
+                                {entry.data.startDate && entry.data.endDate
+                                  ? `${entry.data.startDate} to ${entry.data.endDate}`
+                                  : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Duration (Days)</p>
+                              <p className="font-medium text-slate-900 dark:text-white">{entry.data.durationDays}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Progress</p>
+                              <p className="font-medium text-slate-900 dark:text-white capitalize">{entry.data.progress.replace("-", " ")}</p>
+                            </div>
+                          </div>
+
+                          {/* Computed Values */}
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs p-3 bg-slate-100 dark:bg-slate-700 rounded">
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Manual TC</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.manualTcCount)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Automation TC</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.automationTcCount)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Manual HC</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.manualHc)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Automation HC</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.automationHc)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Weeks</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatNumber(entry.computed.durationWeeks)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Lead Cost</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.leadCost)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">SQPM Cost</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.sqpmCost)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">PL Cost</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.plCost)}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Lab Tech Cost</p>
+                              <p className="font-semibold text-slate-900 dark:text-white">{formatCurrency(entry.computed.labTechCost)}</p>
+                            </div>
+                          </div>
+
+                          {/* Comments */}
+                          {entry.comments && (
+                            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
+                              <p className="text-sm text-amber-900 dark:text-amber-200">
+                                <span className="font-semibold">Comment: </span>
+                                {entry.comments}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -506,32 +672,64 @@ export default function RunDetails() {
                       Total Budget
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Changes
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Comments
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
                       Saved At
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {history.map((entry, index) => (
-                    <tr
-                      key={entry.id}
-                      className="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800"
-                    >
-                      <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
-                        Budget {index + 1}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
-                        {entry.data.startDate && entry.data.endDate
-                          ? `${entry.data.startDate} to ${entry.data.endDate}`
-                          : "—"}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">
-                        {formatCurrency(entry.computed.totalBudget)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
-                        {entry.savedAt}
-                      </td>
-                    </tr>
-                  ))}
+                  {history.map((entry, index) => {
+                    const changes = getChangedFields(index);
+                    return (
+                      <tr
+                        key={entry.id}
+                        className="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800"
+                      >
+                        <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
+                          Budget {history.length - index}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                          {entry.data.startDate && entry.data.endDate
+                            ? `${entry.data.startDate} to ${entry.data.endDate}`
+                            : "—"}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">
+                          {formatCurrency(entry.computed.totalBudget)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                          {changes.length > 0 ? (
+                            <div className="space-y-1 max-h-16 overflow-y-auto">
+                              {changes.map((change, changeIndex) => (
+                                <div key={changeIndex} className="text-xs p-1 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-800">
+                                  <p className="font-medium text-blue-900 dark:text-blue-200">
+                                    {change.field}:
+                                  </p>
+                                  <p className="text-blue-800 dark:text-blue-300">
+                                    <span className="line-through">{change.oldValue}</span>
+                                    <span className="mx-1">→</span>
+                                    <span className="font-semibold">{change.newValue}</span>
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-slate-500 dark:text-slate-400">Initial creation</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 max-w-xs truncate">
+                          {entry.comments}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                          {entry.savedAt}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -678,6 +876,73 @@ export default function RunDetails() {
                 type="button"
                 onClick={saveBudget}
                 className={`inline-flex items-center gap-2 rounded-lg bg-gradient-to-r ${accentColor} px-6 py-2 font-semibold text-white transition-all hover:shadow-lg`}
+              >
+                <Save className="h-4 w-4" />
+                Save Budget
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comments Modal */}
+      {isCommentsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 shadow-2xl">
+            <div className="border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                Save Changes
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCommentsModalOpen(false);
+                  setComments("");
+                }}
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className="mb-4 text-slate-600 dark:text-slate-400">
+                Add comments about this budget update:
+              </p>
+              <textarea
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+                placeholder="Enter your comments here..."
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white resize-none"
+                rows={4}
+              />
+              {comments.trim() === "" && (
+                <p className="mt-2 text-sm text-red-500">
+                  Comments are required
+                </p>
+              )}
+            </div>
+
+            <div className="border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-800 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCommentsModalOpen(false);
+                  setComments("");
+                }}
+                className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-6 py-2 font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveWithComments}
+                disabled={comments.trim() === ""}
+                className={`inline-flex items-center gap-2 rounded-lg px-6 py-2 font-semibold text-white transition-all ${
+                  comments.trim() === ""
+                    ? "bg-slate-300 cursor-not-allowed dark:bg-slate-700"
+                    : `bg-gradient-to-r ${accentColor} hover:shadow-lg`
+                }`}
               >
                 <Save className="h-4 w-4" />
                 Save Budget
