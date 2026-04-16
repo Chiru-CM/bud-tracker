@@ -65,6 +65,8 @@ type HistoryEntry = {
   data: BudgetTemplate;
   savedAt: string;
   computed: ComputedTemplateValues;
+  comments: string;
+  action: "created" | "edited";
 };
 
 const createBudgetTemplate = (): BudgetTemplate => ({
@@ -308,10 +310,12 @@ export default function RunDetails() {
   const [budgets, setBudgets] = useState<BudgetTemplate[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
   const [budgetIndex, setBudgetIndex] = useState<number | null>(null);
   const [budgetFormData, setBudgetFormData] = useState<BudgetTemplate>(createBudgetTemplate());
   const [originalBudgetData, setOriginalBudgetData] = useState<BudgetTemplate | null>(null);
   const [runName, setRunName] = useState<string>(runId || "");
+  const [comments, setComments] = useState<string>("");
 
   const handleBudgetFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -340,9 +344,15 @@ export default function RunDetails() {
   };
 
   const saveBudget = () => {
+    setComments("");
+    setIsCommentsModalOpen(true);
+  };
+
+  const saveWithComments = () => {
+    if (comments.trim() === "") return;
+
     const newBudgets = [...budgets];
     const isNewBudget = budgetIndex === null;
-    const idx = isNewBudget ? newBudgets.length : budgetIndex;
 
     if (budgetIndex !== null) {
       newBudgets[budgetIndex] = budgetFormData;
@@ -358,17 +368,17 @@ export default function RunDetails() {
       data: budgetFormData,
       savedAt: new Date().toLocaleString(),
       computed,
+      comments,
+      action: budgetIndex !== null ? "edited" : "created",
     };
 
     setHistory((prev) => [newHistoryEntry, ...prev]);
     setIsBudgetModalOpen(false);
+    setIsCommentsModalOpen(false);
     setBudgetIndex(null);
     setBudgetFormData(createBudgetTemplate());
     setOriginalBudgetData(null);
-  };
-
-  const duplicateBudget = (index: number) => {
-    setBudgets((prev) => [...prev, { ...prev[index] }]);
+    setComments("");
   };
 
   const removeBudget = (index: number) => {
@@ -458,14 +468,6 @@ export default function RunDetails() {
                         >
                           <Edit3 className="h-4 w-4" />
                           Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => duplicateBudget(index)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Duplicate
                         </button>
                         <button
                           type="button"
