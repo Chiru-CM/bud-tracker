@@ -444,17 +444,18 @@ export default function RunDetails() {
               Budgets
             </h3>
             <div className="space-y-4">
-              {budgets.map((budget, index) => {
+              {[...budgets].reverse().map((budget, index) => {
+                const actualIndex = budgets.length - 1 - index;
                 const computed = calculateTemplateValues(budget);
                 return (
                   <div
-                    key={index}
+                    key={actualIndex}
                     className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800"
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <h4 className="font-semibold text-slate-900 dark:text-white">
-                          Budget {index + 1}
+                          Budget {actualIndex + 1}
                         </h4>
                         <p className="text-sm text-slate-600 dark:text-slate-400">
                           Total: {formatCurrency(computed.totalBudget)}
@@ -463,7 +464,7 @@ export default function RunDetails() {
                       <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => editBudget(index)}
+                          onClick={() => editBudget(actualIndex)}
                           className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                         >
                           <Edit3 className="h-4 w-4" />
@@ -471,7 +472,7 @@ export default function RunDetails() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => removeBudget(index)}
+                          onClick={() => removeBudget(actualIndex)}
                           className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-white hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -506,6 +507,9 @@ export default function RunDetails() {
                       Total Budget
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
+                      Comments
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">
                       Saved At
                     </th>
                   </tr>
@@ -526,6 +530,9 @@ export default function RunDetails() {
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">
                         {formatCurrency(entry.computed.totalBudget)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 max-w-xs truncate">
+                        {entry.comments}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
                         {entry.savedAt}
