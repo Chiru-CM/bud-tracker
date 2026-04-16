@@ -405,6 +405,22 @@ export default function RunDetails() {
     setExpandedVersions(newExpanded);
   };
 
+  const getComputedValueDirection = (currentIndex: number, fieldName: keyof ComputedTemplateValues): "up" | "down" | "none" => {
+    if (currentIndex === history.length - 1) {
+      return "none";
+    }
+    const current = history[currentIndex];
+    const previous = history[currentIndex + 1];
+    if (!previous) {
+      return "none";
+    }
+
+    const currentVal = current.computed[fieldName];
+    const previousVal = previous.computed[fieldName];
+
+    return currentVal > previousVal ? "up" : currentVal < previousVal ? "down" : "none";
+  };
+
   const getChangedFields = (currentIndex: number): Array<{ field: string; oldValue: string; newValue: string; direction: "up" | "down" | "none" }> => {
     if (currentIndex === history.length - 1) {
       return [];
@@ -602,16 +618,23 @@ export default function RunDetails() {
 
                           {/* Computed Values */}
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs p-3 bg-slate-100 dark:bg-slate-700 rounded">
-                            {computedRows.map((row) => (
-                              <div key={row.name}>
-                                <p className="text-slate-600 dark:text-slate-400">{row.label}</p>
-                                <p className="font-semibold text-slate-900 dark:text-white">
-                                  {row.kind === "currency"
-                                    ? formatCurrency(entry.computed[row.name])
-                                    : formatNumber(entry.computed[row.name])}
-                                </p>
-                              </div>
-                            ))}
+                            {computedRows.map((row) => {
+                              const direction = getComputedValueDirection(history.indexOf(entry), row.name);
+                              const textColor =
+                                direction === "up" ? "text-green-700 dark:text-green-400" :
+                                direction === "down" ? "text-red-700 dark:text-red-400" :
+                                "text-slate-900 dark:text-white";
+                              return (
+                                <div key={row.name}>
+                                  <p className="text-slate-600 dark:text-slate-400">{row.label}</p>
+                                  <p className={`font-semibold ${textColor}`}>
+                                    {row.kind === "currency"
+                                      ? formatCurrency(entry.computed[row.name])
+                                      : formatNumber(entry.computed[row.name])}
+                                  </p>
+                                </div>
+                              );
+                            })}
                           </div>
 
                           {/* Comments */}
