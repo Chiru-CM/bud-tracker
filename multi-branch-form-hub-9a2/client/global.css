@@ -220,7 +220,6 @@
 
 .user-profile-button {
   @apply flex items-center gap-2 px-3 py-2 rounded-lg;
-  @apply bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700;
   @apply text-slate-900 dark:text-white transition-colors duration-200;
 }
 
