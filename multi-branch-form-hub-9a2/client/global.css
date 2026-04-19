@@ -212,3 +212,42 @@
 .login-demo-highlight {
   @apply font-semibold text-slate-900 dark:text-white;
 }
+
+/* User Profile Styles */
+.user-profile-container {
+  @apply relative;
+}
+
+.user-profile-button {
+  @apply flex items-center gap-2 px-3 py-2 rounded-lg;
+  @apply bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700;
+  @apply text-slate-900 dark:text-white transition-colors duration-200;
+}
+
+.user-profile-avatar {
+  @apply w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white;
+}
+
+.user-profile-info {
+  @apply flex items-center gap-1;
+}
+
+.user-profile-email {
+  @apply text-sm font-medium truncate max-w-[150px];
+}
+
+.user-profile-chevron {
+  @apply w-4 h-4 transition-transform duration-200;
+}
+
+.user-profile-dropdown {
+  @apply absolute right-0 mt-2 w-48 rounded-lg;
+  @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700;
+  @apply shadow-lg z-50;
+}
+
+.user-profile-logout-btn {
+  @apply w-full px-4 py-2.5 rounded-lg flex items-center gap-2;
+  @apply text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700;
+  @apply transition-colors duration-200 text-sm font-medium;
+}
