@@ -129,3 +129,86 @@
     -moz-appearance: textfield;
   }
 }
+
+/* Login Page Styles */
+.login-container {
+  @apply min-h-screen flex items-center justify-center relative;
+  @apply bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900;
+}
+
+.login-gradient {
+  @apply absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5;
+  @apply dark:from-blue-500/10 dark:to-purple-500/10;
+}
+
+.login-content {
+  @apply relative w-full max-w-md px-4 sm:px-6;
+}
+
+.login-header {
+  @apply text-center mb-8;
+}
+
+.login-title {
+  @apply text-4xl font-bold text-slate-900 dark:text-white mb-2;
+}
+
+.login-subtitle {
+  @apply text-slate-600 dark:text-slate-400;
+}
+
+.login-form-card {
+  @apply bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800;
+  @apply shadow-lg p-8 space-y-6;
+}
+
+.login-form-group {
+  @apply space-y-2;
+}
+
+.login-label {
+  @apply block text-sm font-medium text-slate-900 dark:text-white;
+}
+
+.login-input {
+  @apply w-full px-4 py-2.5 rounded-lg;
+  @apply border border-slate-300 dark:border-slate-700;
+  @apply bg-white dark:bg-slate-800;
+  @apply text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400;
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply transition-colors duration-200;
+}
+
+.login-error {
+  @apply px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800;
+  @apply text-red-600 dark:text-red-200 text-sm;
+}
+
+.login-button {
+  @apply w-full py-2.5 rounded-lg font-semibold;
+  @apply bg-blue-600 hover:bg-blue-700 text-white;
+  @apply dark:bg-blue-700 dark:hover:bg-blue-600;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed;
+  @apply transition-colors duration-200 flex items-center justify-center gap-2;
+}
+
+.login-spinner {
+  @apply w-4 h-4 animate-spin;
+}
+
+.login-demo-info {
+  @apply pt-6 border-t border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-400;
+}
+
+.login-demo-title {
+  @apply font-medium text-slate-900 dark:text-white mb-2;
+}
+
+.login-demo-text {
+  @apply mb-1;
+}
+
+.login-demo-highlight {
+  @apply font-semibold text-slate-900 dark:text-white;
+}
