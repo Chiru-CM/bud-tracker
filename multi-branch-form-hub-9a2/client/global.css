@@ -250,3 +250,35 @@
   @apply text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700;
   @apply transition-colors duration-200 text-sm font-medium;
 }
+
+/* OTP Verification Styles */
+.otp-email-display {
+  @apply px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800;
+}
+
+.otp-email-label {
+  @apply text-xs font-medium text-blue-600 dark:text-blue-400 mb-1;
+}
+
+.otp-email-text {
+  @apply text-sm font-semibold text-blue-900 dark:text-blue-100;
+}
+
+.otp-input {
+  @apply text-center text-xl tracking-widest font-mono;
+}
+
+.otp-input::placeholder {
+  @apply text-slate-300 dark:text-slate-600;
+}
+
+.otp-input-hint {
+  @apply text-xs text-slate-500 dark:text-slate-400 mt-2;
+}
+
+.otp-back-button {
+  @apply w-full py-2.5 rounded-lg font-semibold;
+  @apply bg-slate-100 hover:bg-slate-200 text-slate-900;
+  @apply dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white;
+  @apply transition-colors duration-200 flex items-center justify-center gap-2;
+}
