@@ -33,7 +33,7 @@ export default function Login() {
 
     try {
       await verifyOtp(otp);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'OTP verification failed');
     } finally {
