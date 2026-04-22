@@ -28,8 +28,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/branch1" element={<ProtectedRoute><Branch1 /></ProtectedRoute>} />
             <Route path="/branch2" element={<ProtectedRoute><Branch2 /></ProtectedRoute>} />
             <Route path="/branch3" element={<ProtectedRoute><Branch3 /></ProtectedRoute>} />
