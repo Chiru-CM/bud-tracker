@@ -11,6 +11,7 @@ import {
   type CategoryKey,
   type TeamCard,
 } from "@/lib/team-config";
+import { UserProfile } from "@/components/UserProfile";
 
 export default function CategoryTeams() {
   const { branch, category } = useParams<{
@@ -116,13 +117,16 @@ export default function CategoryTeams() {
                 </p>
               </div>
             </div>
-            <Link
-              to={`/${branchKey}`}
-              className="flex items-center gap-2 text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                to={`/${branchKey}`}
+                className="flex items-center gap-2 text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Link>
+              <UserProfile />
+            </div>
           </div>
         </div>
       </div>

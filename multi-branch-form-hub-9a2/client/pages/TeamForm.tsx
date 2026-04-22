@@ -13,6 +13,7 @@ import {
   type BranchKey,
   type CategoryKey,
 } from "@/lib/team-config";
+import { UserProfile } from "@/components/UserProfile";
 
 type BudgetTemplate = {
   validationRunName: string;
@@ -713,13 +714,16 @@ export default function TeamForm() {
                 </p>
               </div>
             </div>
-            <Link
-              to={backPath}
-              className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                to={backPath}
+                className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Link>
+              <UserProfile />
+            </div>
           </div>
         </div>
       </div>
