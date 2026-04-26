@@ -8,7 +8,7 @@ export default function Branch1() {
   const categories = getCategoryCards();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-white to-blue-50 dark:from-slate-950 dark:to-blue-950">
       <div className="sticky top-0 z-50 border-b border-slate-200 bg-white/50 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/50">
         <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">

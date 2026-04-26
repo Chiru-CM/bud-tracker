@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import Layout from "@/components/Layout";
 import Index from "./pages/Index";
 import Branch1 from "./pages/Branch1";
 import Branch2 from "./pages/Branch2";
@@ -30,13 +31,13 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/branch1" element={<ProtectedRoute><Branch1 /></ProtectedRoute>} />
-            <Route path="/branch2" element={<ProtectedRoute><Branch2 /></ProtectedRoute>} />
-            <Route path="/branch3" element={<ProtectedRoute><Branch3 /></ProtectedRoute>} />
-            <Route path="/:branch/:category" element={<ProtectedRoute><CategoryTeams /></ProtectedRoute>} />
-            <Route path="/:branch/:category/:teamPath" element={<ProtectedRoute><TeamForm /></ProtectedRoute>} />
-            <Route path="/:branch/:category/:teamPath/:runId" element={<ProtectedRoute><RunDetails /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Layout><Index /></Layout></ProtectedRoute>} />
+            <Route path="/branch1" element={<ProtectedRoute><Layout><Branch1 /></Layout></ProtectedRoute>} />
+            <Route path="/branch2" element={<ProtectedRoute><Layout><Branch2 /></Layout></ProtectedRoute>} />
+            <Route path="/branch3" element={<ProtectedRoute><Layout><Branch3 /></Layout></ProtectedRoute>} />
+            <Route path="/:branch/:category" element={<ProtectedRoute><Layout><CategoryTeams /></Layout></ProtectedRoute>} />
+            <Route path="/:branch/:category/:teamPath" element={<ProtectedRoute><Layout><TeamForm /></Layout></ProtectedRoute>} />
+            <Route path="/:branch/:category/:teamPath/:runId" element={<ProtectedRoute><Layout><RunDetails /></Layout></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
