@@ -282,3 +282,8 @@
   @apply dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white;
   @apply transition-colors duration-200 flex items-center justify-center gap-2;
 }
+
+/* Sidebar Content Layout */
+.sidebar-content {
+  @apply transition-all duration-300;
+}
